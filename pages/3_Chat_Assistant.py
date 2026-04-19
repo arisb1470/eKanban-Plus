@@ -35,7 +35,7 @@ rules = load_demo_business_rules()
 
 st.caption("Der Chat nutzt Daten-Tools für Fakten und ein Cloud-LLM nur für die Formulierung.")
 if llm_is_available():
-    st.success("Gemini API verfügbar")
+    st.success("Chatbot verfügbar")
 else:
     st.warning("Kein API-Key gefunden — Chat läuft im Fallback-Modus.")
 
