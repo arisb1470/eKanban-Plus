@@ -9,7 +9,7 @@ DATA_DIR = ROOT_DIR / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
-DEFAULT_CHAT_MODEL = "gemini-2.5-flash"
+DEFAULT_CHAT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
 DEFAULT_EMBED_MODEL = "gemini-embedding-001"
 
 FREE_SHIPPING_THRESHOLD_EUR = 500.0
