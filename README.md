@@ -30,5 +30,10 @@ python -m venv .venv
 pip install -r requirements.txt
 streamlit run Dashboard.py
 
+
+
 ## Login
 Mit Kunde A oder Kunde B, Passowrt für beide: 12345
+
+##WICHTIG:
+eine secrets.toml datei muss lokal erstellt werden, darin muss ein funktionierender API Key sowie ein definiertes LLM vorhanden sein sowie die Login Daten der Kunden 
