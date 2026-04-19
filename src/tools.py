@@ -4,10 +4,9 @@ from typing import Any
 
 import pandas as pd
 
-from src.analytics import build_kpis, filter_critical_drums
+from src.analytics import build_kpis, display_snapshot, filter_critical_drums
 from src.auth import mask_tenant_records
 from src.bundling import build_bundle_candidates, bundle_details
-
 
 JSON_COLUMNS = [
     "drum_id",
@@ -19,6 +18,7 @@ JSON_COLUMNS = [
     "predicted_empty_date",
     "latest_safe_order_date",
     "estimated_order_value_eur",
+    "forecast_status",
     "forecast_confidence",
     "risk_label",
 ]
@@ -29,7 +29,7 @@ def _frame_preview(df: pd.DataFrame, columns: list[str] | None = None, limit: in
         return []
 
     cols = [c for c in (columns or df.columns.tolist()) if c in df.columns]
-    preview = df[cols].head(limit).copy()
+    preview = display_snapshot(df[cols].head(limit).copy())
     preview = preview.where(pd.notnull(preview), None)
     return mask_tenant_records(preview.to_dict(orient="records"))
 
@@ -38,7 +38,8 @@ def get_general_summary(snapshot: pd.DataFrame) -> dict[str, Any]:
     kpis = build_kpis(snapshot)
     summary = (
         f"Im aktuellen Snapshot sind {kpis['drums']} Trommeln enthalten. "
-        f"Davon sind {kpis['critical']} kritisch und {kpis['attention']} benötigen Aufmerksamkeit. "
+        f"Davon sind {kpis['critical']} kritisch, {kpis['attention']} haben Handlungsbedarf "
+        f"und {kpis['review']} haben Prüfbedarf. "
         f"Die durchschnittliche Restreichweite beträgt {kpis['avg_days_left']} Tage."
     )
     return {
@@ -57,10 +58,20 @@ def get_drum_status(snapshot: pd.DataFrame, drum_id: int) -> dict[str, Any]:
         }
 
     row = df.iloc[0]
+    forecast_status = row.get("forecast_status", "ok")
+    if pd.notna(row.get("days_left")):
+        range_text = f"eine Restreichweite von {row.get('days_left')} Tagen"
+    elif forecast_status == "kein aktueller Verbrauch":
+        range_text = "aktuell keinen erkennbaren Verbrauch"
+    elif forecast_status == "keine Verbrauchsdaten":
+        range_text = "keine ausreichenden Verbrauchsdaten für eine Prognose"
+    else:
+        range_text = "eine unsichere Restreichweiten-Prognose"
+
     summary = (
         f"Trommel {drum_id} in {row.get('rack', 'unbekannt')} "
         f"hat aktuell {row.get('current_length_m', 'n/a')} m Bestand, "
-        f"eine Restreichweite von {row.get('days_left', 'n/a')} Tagen "
+        f"{range_text}, den Prognosestatus '{forecast_status}' "
         f"und den Risikostatus '{row.get('risk_label', 'unbekannt')}'."
     )
 

@@ -18,6 +18,13 @@ from src.config import (
 )
 
 RiskLabel = Literal["kritisch", "bald fällig", "beobachten", "niedrig", "unsicher"]
+ForecastStatus = Literal[
+    "ok",
+    "niedrige Prognosesicherheit",
+    "kein aktueller Verbrauch",
+    "keine Verbrauchsdaten",
+    "keine Prognosegüte",
+]
 
 
 @dataclass
@@ -43,32 +50,87 @@ def classify_confidence(r2: float | int | None) -> str:
     return "low"
 
 
+def classify_forecast_status(
+    depletion_rate: float | int | None,
+    confidence: str,
+) -> ForecastStatus:
+    if depletion_rate is None or pd.isna(depletion_rate):
+        return "keine Verbrauchsdaten"
+
+    depletion_rate = float(depletion_rate)
+    if depletion_rate <= 0:
+        return "kein aktueller Verbrauch"
+
+    if confidence == "low":
+        return "niedrige Prognosesicherheit"
+    if confidence == "unknown":
+        return "keine Prognosegüte"
+    return "ok"
+
+
 def classify_risk(
     days_left: float | int | None,
     safe_order_date: pd.Timestamp | pd.NaT,
-    confidence: str,
+    forecast_status: ForecastStatus,
 ) -> RiskLabel:
     today = _today()
-
-    if days_left is None or pd.isna(days_left):
-        return "unsicher"
-
-    days_left = float(days_left)
 
     if pd.notna(safe_order_date) and pd.Timestamp(safe_order_date).normalize() <= today:
         return "kritisch"
 
-    if days_left <= 3:
-        return "kritisch"
-    if days_left <= 7:
-        return "bald fällig"
-    if days_left <= 14:
-        return "beobachten"
+    if days_left is not None and pd.notna(days_left):
+        days_left = float(days_left)
+        if days_left <= 3:
+            return "kritisch"
+        if days_left <= 7:
+            return "bald fällig"
+        if days_left <= 14:
+            return "beobachten"
 
-    if confidence == "low":
+    if forecast_status in {
+        "niedrige Prognosesicherheit",
+        "keine Prognosegüte",
+        "keine Verbrauchsdaten",
+    }:
         return "unsicher"
 
     return "niedrig"
+
+
+def _display_days_left(days_left: float | int | None, forecast_status: str) -> float | str:
+    if days_left is not None and pd.notna(days_left):
+        return round(float(days_left), 2)
+    if forecast_status == "kein aktueller Verbrauch":
+        return "kein aktueller Verbrauch"
+    if forecast_status == "keine Verbrauchsdaten":
+        return "keine Daten"
+    return "—"
+
+
+def _display_date(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "—"
+    return str(pd.Timestamp(value).normalize().date())
+
+
+def display_snapshot(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
+
+    out = df.copy()
+
+    if "days_left" in out.columns:
+        statuses = out.get("forecast_status", pd.Series("", index=out.index, dtype="object"))
+        out["days_left"] = [
+            _display_days_left(days_left, status)
+            for days_left, status in zip(out["days_left"], statuses, strict=False)
+        ]
+
+    for col in ["predicted_empty_date", "predicted_threshold_date", "latest_safe_order_date"]:
+        if col in out.columns:
+            out[col] = out[col].apply(_display_date)
+
+    return out.where(pd.notnull(out), "—")
 
 
 def enrich_latest_snapshot(latest_snapshot: pd.DataFrame, pricing: pd.DataFrame) -> pd.DataFrame:
@@ -79,7 +141,8 @@ def enrich_latest_snapshot(latest_snapshot: pd.DataFrame, pricing: pd.DataFrame)
 
     if not pricing.empty and "part_number" in df.columns and "part_number" in pricing.columns:
         pricing_cols = [
-            c for c in [
+            c
+            for c in [
                 "part_number",
                 "price_per_meter_eur",
                 "delivery_time_days",
@@ -101,7 +164,6 @@ def enrich_latest_snapshot(latest_snapshot: pd.DataFrame, pricing: pd.DataFrame)
     price_per_meter = pd.to_numeric(df.get("price_per_meter_eur"), errors="coerce").fillna(0.0)
     initial_length = pd.to_numeric(df.get("initial_cable_length_m"), errors="coerce").fillna(0)
 
-    # Defensive cleaning
     current_length = current_length.clip(lower=0)
     order_threshold = order_threshold.clip(lower=0)
     delivery_days = delivery_days.clip(lower=1)
@@ -131,6 +193,8 @@ def enrich_latest_snapshot(latest_snapshot: pd.DataFrame, pricing: pd.DataFrame)
         offset_days = int(np.ceil(float(lt))) + SAFETY_BUFFER_BUSINESS_DAYS
         safe_order_dates.append(pd.Timestamp(empty_dt) - BDay(offset_days))
 
+    safe_order_dates = pd.to_datetime(pd.Series(safe_order_dates, index=df.index)).dt.normalize()
+
     reorder_qty_m = np.maximum(initial_length, packaging_unit)
     reorder_qty_m = np.ceil(reorder_qty_m / packaging_unit) * packaging_unit
     estimated_order_value = reorder_qty_m * price_per_meter
@@ -139,20 +203,32 @@ def enrich_latest_snapshot(latest_snapshot: pd.DataFrame, pricing: pd.DataFrame)
     df["days_left"] = days_left.round(2)
     df["predicted_empty_date"] = pd.to_datetime(predicted_empty_date).dt.normalize()
     df["predicted_threshold_date"] = pd.to_datetime(predicted_threshold_date).dt.normalize()
-    df["latest_safe_order_date"] = pd.to_datetime(safe_order_dates)
+    df["latest_safe_order_date"] = safe_order_dates
     df["reorder_qty_m"] = reorder_qty_m.round(0)
     df["estimated_order_value_eur"] = estimated_order_value.round(2)
     df["forecast_confidence"] = r2.apply(classify_confidence)
+    df["forecast_status"] = [
+        classify_forecast_status(rate, confidence)
+        for rate, confidence in zip(depletion_rate, df["forecast_confidence"], strict=False)
+    ]
     df["risk_label"] = [
-        classify_risk(dl, sod, conf)
-        for dl, sod, conf in zip(
+        classify_risk(dl, sod, status)
+        for dl, sod, status in zip(
             df["days_left"],
             df["latest_safe_order_date"],
-            df["forecast_confidence"],
+            df["forecast_status"],
             strict=False,
         )
     ]
-    df["needs_attention"] = df["risk_label"].isin(["kritisch", "bald fällig", "unsicher"])
+
+    # Broader definition of operational attention:
+    # includes kritisch, bald fällig, and beobachten
+    df["needs_attention"] = df["risk_label"].isin(["kritisch", "bald fällig", "beobachten"])
+
+    # Separate review need for weak / missing forecast quality
+    df["needs_review"] = df["forecast_status"].isin(
+        ["niedrige Prognosesicherheit", "keine Prognosegüte", "keine Verbrauchsdaten"]
+    )
 
     return df
 
@@ -164,15 +240,28 @@ def filter_critical_drums(df: pd.DataFrame, horizon_days: int = 7) -> pd.DataFra
     out = df.copy()
     horizon_date = _today() + pd.Timedelta(days=horizon_days)
 
-    cond = out["days_left"].fillna(9999) <= horizon_days
+    cond = out["risk_label"].isin(["kritisch", "bald fällig", "beobachten"])
+    cond |= out["days_left"].fillna(9999) <= horizon_days
     cond |= out["latest_safe_order_date"].notna() & (
         pd.to_datetime(out["latest_safe_order_date"]).dt.normalize() <= horizon_date
     )
-    cond |= out["forecast_confidence"].isin(["low", "unknown"])
 
     out = out.loc[cond].sort_values(
         ["latest_safe_order_date", "days_left", "estimated_order_value_eur"],
         ascending=[True, True, False],
+        na_position="last",
+    )
+    return out
+
+
+def filter_review_drums(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
+
+    out = df.loc[df["needs_review"]].copy()
+    out = out.sort_values(
+        ["forecast_status", "latest_safe_order_date", "days_left", "estimated_order_value_eur"],
+        ascending=[True, True, True, False],
         na_position="last",
     )
     return out
@@ -218,20 +307,26 @@ def compare_individual_vs_bundle(df: pd.DataFrame) -> dict[str, float]:
     }
 
 
-def build_kpis(df: pd.DataFrame) -> dict[str, float | int]:
+def build_kpis(df: pd.DataFrame, attention_horizon_days: int = 7) -> dict[str, float | int]:
     if df.empty:
         return {
             "drums": 0,
             "critical": 0,
             "attention": 0,
+            "review": 0,
             "avg_days_left": 0.0,
             "high_confidence_share": 0.0,
         }
 
+    attention_count = len(filter_critical_drums(df, horizon_days=attention_horizon_days))
+
     return {
         "drums": int(df["drum_id"].nunique()) if "drum_id" in df.columns else len(df),
         "critical": int(df["risk_label"].eq("kritisch").sum()),
-        "attention": int(df["needs_attention"].sum()),
-        "avg_days_left": round(float(df["days_left"].dropna().mean()), 1) if df["days_left"].notna().any() else 0.0,
+        "attention": int(attention_count),
+        "review": int(df["needs_review"].sum()),
+        "avg_days_left": round(float(df["days_left"].dropna().mean()), 1)
+        if df["days_left"].notna().any()
+        else 0.0,
         "high_confidence_share": round(float(df["forecast_confidence"].eq("high").mean() * 100), 1),
     }

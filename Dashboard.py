@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import streamlit as st
 
-from src.analytics import build_kpis, enrich_latest_snapshot, filter_critical_drums
+from src.analytics import (
+    build_kpis,
+    display_snapshot,
+    enrich_latest_snapshot,
+    filter_critical_drums,
+    filter_review_drums,
+)
 from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer, without_tenant
 from src.db import get_latest_snapshot, register_bundle
 from src.load_data import load_data
@@ -23,14 +29,16 @@ st.title("LAPP eKanban Plus")
 if scoped_bundle.has_core_data:
     con = register_bundle(scoped_bundle)
     snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricing)
-    critical = filter_critical_drums(snapshot, horizon_days=7)
-    kpis = build_kpis(snapshot)
+    critical = filter_critical_drums(snapshot, horizon_days=30)
+    review = filter_review_drums(snapshot)
+    kpis = build_kpis(snapshot, attention_horizon_days=30)
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Trommeln", kpis["drums"])
     col2.metric("Kritisch", kpis["critical"])
     col3.metric("Handlungsbedarf", kpis["attention"])
-    col4.metric("Ø Restreichweite", f"{kpis['avg_days_left']} Tage")
+    col4.metric("Prüfbedarf", kpis["review"])
+    col5.metric("Ø Restreichweite", f"{kpis['avg_days_left']} Tage")
 
     st.subheader("Was diese App macht")
     st.markdown(
@@ -42,12 +50,26 @@ if scoped_bundle.has_core_data:
         """
     )
 
-    st.subheader("Kritische Trommeln im 7-Tage-Horizont")
     preview_cols = [
-        "drum_id", "rack", "product", "current_length_m", "days_left",
-        "predicted_empty_date", "latest_safe_order_date", "estimated_order_value_eur", "risk_label",
+        "drum_id",
+        "rack",
+        "product",
+        "current_length_m",
+        "days_left",
+        "predicted_empty_date",
+        "latest_safe_order_date",
+        "forecast_status",
+        "estimated_order_value_eur",
+        "risk_label",
     ]
-    st.dataframe(without_tenant(critical[preview_cols]), width='stretch', hide_index=True)
+
+    st.subheader("Trommeln mit Handlungsbedarf im 30-Tage-Horizont")
+    st.dataframe(
+        without_tenant(display_snapshot(critical[preview_cols])),
+        width="stretch",
+        hide_index=True,
+    )
+    
 else:
     st.warning("Für dieses Kundenkonto wurden noch keine vollständigen Daten gefunden.")
     st.markdown(
