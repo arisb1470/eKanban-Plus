@@ -19,7 +19,6 @@ render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
 st.title("LAPP eKanban Plus")
-st.caption(f"Aktive Kundensicht: {customer}")
 
 if scoped_bundle.has_core_data:
     con = register_bundle(scoped_bundle)

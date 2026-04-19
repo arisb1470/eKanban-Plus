@@ -13,7 +13,6 @@ render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
 st.title("Overview")
-st.caption(f"Aktive Kundensicht: {customer}")
 
 if not scoped_bundle.has_core_data:
     st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
