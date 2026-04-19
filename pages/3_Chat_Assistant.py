@@ -1,0 +1,87 @@
+from __future__ import annotations
+
+import streamlit as st
+
+from src.analytics import enrich_latest_snapshot
+from src.bundling import build_bundle_candidates
+from src.db import get_latest_snapshot, register_bundle
+from src.llm import ask_llm, llm_is_available
+from src.load_data import load_data, load_demo_business_rules
+from src.retrieval import rank_texts
+from src.router import route_question
+from src.tools import (
+    find_critical_drums,
+    get_bundle_candidates,
+    get_drum_status,
+    get_general_summary,
+)
+
+st.title("Chat Assistant")
+
+bundle = load_data()
+if not bundle.has_core_data:
+    st.info("Bitte zuerst die CSV-Dateien in data/raw ablegen.")
+    st.stop()
+
+con = register_bundle(bundle)
+snapshot = enrich_latest_snapshot(get_latest_snapshot(con), bundle.pricing)
+_ = build_bundle_candidates(snapshot)
+rules = load_demo_business_rules()
+
+st.caption("Der Chat nutzt Daten-Tools für Fakten und ein Cloud-LLM nur für die Formulierung.")
+if llm_is_available():
+    st.success("Gemini API verfügbar")
+else:
+    st.warning("Kein API-Key gefunden — Chat läuft im Fallback-Modus.")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": (
+                "Frag mich zum Beispiel: "
+                "'Welche Trommeln sind kritisch?', "
+                "'Welche Bestellungen lassen sich bündeln?' "
+                "oder 'Wie ist der Status von Trommel 1574?'"
+            ),
+        }
+    ]
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+        if message.get("preview"):
+            st.dataframe(message["preview"], width='stretch', hide_index=True)
+
+prompt = st.chat_input("Frage zu Risiko, Trommeln, Bestellzeitpunkt oder Bundling ...")
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    decision = route_question(prompt)
+
+    if decision.tool_name == "get_drum_status" and decision.drum_id is not None:
+        result = get_drum_status(snapshot, decision.drum_id)
+    elif decision.tool_name == "find_critical_drums":
+        result = find_critical_drums(snapshot, decision.horizon_days or 7)
+    elif decision.tool_name == "build_bundle_candidates":
+        result = get_bundle_candidates(snapshot, decision.horizon_days or 14)
+    else:
+        result = get_general_summary(snapshot)
+
+    retrieved = rank_texts(prompt, rules, top_k=3)
+    answer = ask_llm(prompt, result, retrieved)
+
+    preview = result.get("data_preview", [])
+    assistant_message = {"role": "assistant", "content": answer}
+    if preview:
+        assistant_message["preview"] = preview
+
+    st.session_state.messages.append(assistant_message)
+
+    with st.chat_message("assistant"):
+        st.markdown(answer)
+        if preview:
+            st.dataframe(preview, width='stretch', hide_index=True)
