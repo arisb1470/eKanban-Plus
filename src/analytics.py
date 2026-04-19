@@ -55,9 +55,6 @@ def classify_risk(
 
     days_left = float(days_left)
 
-    if confidence == "low":
-        return "unsicher"
-
     if pd.notna(safe_order_date) and pd.Timestamp(safe_order_date).normalize() <= today:
         return "kritisch"
 
@@ -67,6 +64,10 @@ def classify_risk(
         return "bald fällig"
     if days_left <= 14:
         return "beobachten"
+
+    if confidence == "low":
+        return "unsicher"
+
     return "niedrig"
 
 
