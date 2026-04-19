@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from src.analytics import enrich_latest_snapshot
+from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer
 from src.bundling import build_bundle_candidates
 from src.db import get_latest_snapshot, register_bundle
 from src.llm import ask_llm, llm_is_available
@@ -16,15 +17,20 @@ from src.tools import (
     get_general_summary,
 )
 
-st.title("Chat Assistant")
-
 bundle = load_data()
-if not bundle.has_core_data:
-    st.info("Bitte zuerst die CSV-Dateien in data/raw ablegen.")
+customer = require_login(bundle)
+render_sidebar_auth()
+scoped_bundle = scope_bundle_to_customer(bundle, customer)
+
+st.title("Chat Assistant")
+st.caption(f"Aktive Kundensicht: {customer}")
+
+if not scoped_bundle.has_core_data:
+    st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
     st.stop()
 
-con = register_bundle(bundle)
-snapshot = enrich_latest_snapshot(get_latest_snapshot(con), bundle.pricing)
+con = register_bundle(scoped_bundle)
+snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricing)
 _ = build_bundle_candidates(snapshot)
 rules = load_demo_business_rules()
 
@@ -34,7 +40,20 @@ if llm_is_available():
 else:
     st.warning("Kein API-Key gefunden — Chat läuft im Fallback-Modus.")
 
-if "messages" not in st.session_state:
+if st.session_state.get("chat_customer") != customer:
+    st.session_state.chat_customer = customer
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": (
+                "Frag mich zum Beispiel: "
+                "'Welche Trommeln sind kritisch?', "
+                "'Welche Bestellungen lassen sich bündeln?' "
+                "oder 'Wie ist der Status von Trommel 1574?'"
+            ),
+        }
+    ]
+elif "messages" not in st.session_state:
     st.session_state.messages = [
         {
             "role": "assistant",

@@ -3,6 +3,7 @@ from __future__ import annotations
 import streamlit as st
 
 from src.analytics import build_kpis, enrich_latest_snapshot, filter_critical_drums
+from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer, without_tenant
 from src.db import get_latest_snapshot, register_bundle
 from src.load_data import load_data
 
@@ -12,14 +13,19 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("LAPP eKanban Plus")
-
 bundle = load_data()
-if bundle.has_core_data:
-    con = register_bundle(bundle)
-    snapshot = enrich_latest_snapshot(get_latest_snapshot(con), bundle.pricing)
-    kpis = build_kpis(snapshot)
+customer = require_login(bundle)
+render_sidebar_auth()
+scoped_bundle = scope_bundle_to_customer(bundle, customer)
+
+st.title("LAPP eKanban Plus")
+st.caption(f"Aktive Kundensicht: {customer}")
+
+if scoped_bundle.has_core_data:
+    con = register_bundle(scoped_bundle)
+    snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricing)
     critical = filter_critical_drums(snapshot, horizon_days=7)
+    kpis = build_kpis(snapshot)
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Trommeln", kpis["drums"])
@@ -39,12 +45,12 @@ if bundle.has_core_data:
 
     st.subheader("Kritische Trommeln im 7-Tage-Horizont")
     preview_cols = [
-        "drum_id", "tenant", "rack", "product", "current_length_m", "days_left",
+        "drum_id", "rack", "product", "current_length_m", "days_left",
         "predicted_empty_date", "latest_safe_order_date", "estimated_order_value_eur", "risk_label",
     ]
-    st.dataframe(critical[preview_cols], width='stretch', hide_index=True)
+    st.dataframe(without_tenant(critical[preview_cols]), width='stretch', hide_index=True)
 else:
-    st.warning("Noch keine vollständigen Daten gefunden. Lege bitte die Challenge-CSVs unter data/raw ab.")
+    st.warning("Für dieses Kundenkonto wurden noch keine vollständigen Daten gefunden.")
     st.markdown(
         """
         Erwartete Struktur:

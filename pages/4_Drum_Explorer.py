@@ -3,19 +3,25 @@ from __future__ import annotations
 import streamlit as st
 
 from src.analytics import enrich_latest_snapshot
+from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer
 from src.db import register_bundle
 from src.load_data import load_data, merge_racks
 
-st.title("Drum Explorer")
-
 bundle = load_data()
-if not bundle.has_core_data:
-    st.info("Bitte zuerst die CSV-Dateien in data/raw ablegen.")
+customer = require_login(bundle)
+render_sidebar_auth()
+scoped_bundle = scope_bundle_to_customer(bundle, customer)
+
+st.title("Drum Explorer")
+st.caption(f"Aktive Kundensicht: {customer}")
+
+if not scoped_bundle.has_core_data:
+    st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
     st.stop()
 
-_ = register_bundle(bundle)
-all_racks = merge_racks(bundle)
-snapshot = enrich_latest_snapshot(all_racks.sort_values(["drum_id", "date"]).groupby("drum_id", as_index=False).tail(1), bundle.pricing)
+_ = register_bundle(scoped_bundle)
+all_racks = merge_racks(scoped_bundle)
+snapshot = enrich_latest_snapshot(all_racks.sort_values(["drum_id", "date"]).groupby("drum_id", as_index=False).tail(1), scoped_bundle.pricing)
 
 available_drums = sorted(snapshot["drum_id"].dropna().astype(int).unique().tolist())
 selected_drum = st.selectbox("Trommel wählen", available_drums)
@@ -36,7 +42,6 @@ st.line_chart(chart_df)
 st.subheader("Drum-Metadaten")
 st.json({
     "drum_id": int(latest["drum_id"]),
-    "tenant": latest.get("tenant"),
     "rack": latest.get("rack"),
     "product": latest.get("product"),
     "part_number": latest.get("part_number"),

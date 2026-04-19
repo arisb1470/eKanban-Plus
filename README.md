@@ -29,3 +29,6 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run Dashboard.py
+
+## Login
+Mit Kunde A oder Kunde B, Passowrt für beide: 12345

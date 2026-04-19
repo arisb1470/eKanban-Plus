@@ -5,12 +5,12 @@ from typing import Any
 import pandas as pd
 
 from src.analytics import build_kpis, filter_critical_drums
+from src.auth import mask_tenant_records
 from src.bundling import build_bundle_candidates, bundle_details
 
 
 JSON_COLUMNS = [
     "drum_id",
-    "tenant",
     "rack",
     "product",
     "part_number",
@@ -31,7 +31,7 @@ def _frame_preview(df: pd.DataFrame, columns: list[str] | None = None, limit: in
     cols = [c for c in (columns or df.columns.tolist()) if c in df.columns]
     preview = df[cols].head(limit).copy()
     preview = preview.where(pd.notnull(preview), None)
-    return preview.to_dict(orient="records")
+    return mask_tenant_records(preview.to_dict(orient="records"))
 
 
 def get_general_summary(snapshot: pd.DataFrame) -> dict[str, Any]:
@@ -58,7 +58,7 @@ def get_drum_status(snapshot: pd.DataFrame, drum_id: int) -> dict[str, Any]:
 
     row = df.iloc[0]
     summary = (
-        f"Trommel {drum_id} bei {row.get('tenant', 'unbekannt')} / {row.get('rack', 'unbekannt')} "
+        f"Trommel {drum_id} in {row.get('rack', 'unbekannt')} "
         f"hat aktuell {row.get('current_length_m', 'n/a')} m Bestand, "
         f"eine Restreichweite von {row.get('days_left', 'n/a')} Tagen "
         f"und den Risikostatus '{row.get('risk_label', 'unbekannt')}'."
@@ -91,7 +91,6 @@ def get_bundle_candidates(snapshot: pd.DataFrame, horizon_days: int = 14) -> dic
 
     columns = [
         "bundle_id",
-        "tenant",
         "rack",
         "recommended_order_date",
         "latest_due_date",

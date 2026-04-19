@@ -3,19 +3,25 @@ from __future__ import annotations
 import streamlit as st
 
 from src.analytics import enrich_latest_snapshot
+from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer, without_tenant
 from src.bundling import build_bundle_candidates, bundle_details
 from src.db import get_latest_snapshot, register_bundle
 from src.load_data import load_data
 
-st.title("Bundle Optimizer")
-
 bundle = load_data()
-if not bundle.has_core_data:
-    st.info("Bitte zuerst die CSV-Dateien in data/raw ablegen.")
+customer = require_login(bundle)
+render_sidebar_auth()
+scoped_bundle = scope_bundle_to_customer(bundle, customer)
+
+st.title("Bundle Optimizer")
+st.caption(f"Aktive Kundensicht: {customer}")
+
+if not scoped_bundle.has_core_data:
+    st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
     st.stop()
 
-con = register_bundle(bundle)
-snapshot = enrich_latest_snapshot(get_latest_snapshot(con), bundle.pricing)
+con = register_bundle(scoped_bundle)
+snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricing)
 
 horizon = st.slider("Planungshorizont (Tage)", min_value=3, max_value=30, value=14)
 window = st.slider("Bündelungsfenster (Tage)", min_value=2, max_value=10, value=5)
@@ -26,7 +32,7 @@ if bundles.empty:
     st.stop()
 
 st.subheader("Empfohlene Bündel")
-st.dataframe(bundles, width='stretch', hide_index=True)
+st.dataframe(without_tenant(bundles), width='stretch', hide_index=True)
 
 selected_bundle = st.selectbox("Bundle auswählen", options=bundles["bundle_id"].tolist())
 details = bundle_details(snapshot, selected_bundle, bundles)
@@ -39,4 +45,4 @@ metric_cols[2].metric("Kosten gebündelt", f"{selected_row['bundle_total_eur']:.
 metric_cols[3].metric("Einsparung", f"{selected_row['savings_eur']:.2f} €")
 
 st.subheader("Bundle-Details")
-st.dataframe(details, width='stretch', hide_index=True)
+st.dataframe(without_tenant(details), width='stretch', hide_index=True)
