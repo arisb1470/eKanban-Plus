@@ -8,6 +8,7 @@ from src.analytics import (
     enrich_latest_snapshot,
     filter_critical_drums,
     filter_review_drums,
+    get_data_freshness,
 )
 from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer, without_tenant
 from src.db import get_latest_snapshot, register_bundle
@@ -29,6 +30,13 @@ snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricin
 kpis = build_kpis(snapshot, attention_horizon_days=30)
 critical = filter_critical_drums(snapshot, horizon_days=30)
 review = filter_review_drums(snapshot)
+freshness = get_data_freshness(snapshot)
+
+st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
+if freshness["is_stale"]:
+    st.warning(
+        "Historischer Datensatz: Restreichweiten und Bestelltermine sind auf den letzten Messzeitpunkt im Datensatz bezogen, nicht auf heute."
+    )
 
 metric_cols = st.columns(6)
 metric_cols[0].metric("Trommeln", kpis["drums"])
@@ -55,6 +63,7 @@ with left:
                         "latest_safe_order_date",
                         "forecast_status",
                         "forecast_confidence",
+                        "review_reason",
                         "risk_label",
                     ]
                 ]
@@ -78,12 +87,11 @@ st.dataframe(
                     "drum_id",
                     "rack",
                     "product",
-                    "current_length_m",
-                    "days_left",
-                    "predicted_empty_date",
-                    "latest_safe_order_date",
                     "forecast_status",
-                    "forecast_confidence",
+                    "review_reason",
+                    "sensor_readings_count",
+                    "avg_battery_voltage",
+                    "avg_signal_strength",
                     "risk_label",
                 ]
             ]
@@ -94,4 +102,4 @@ st.dataframe(
 )
 
 st.subheader("Latest Snapshot")
-st.dataframe(without_tenant(snapshot), width="stretch", hide_index=True)
+st.dataframe(without_tenant(display_snapshot(snapshot)), width="stretch", hide_index=True)

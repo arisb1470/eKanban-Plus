@@ -8,6 +8,7 @@ from src.analytics import (
     enrich_latest_snapshot,
     filter_critical_drums,
     filter_review_drums,
+    get_data_freshness,
 )
 from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer, without_tenant
 from src.db import get_latest_snapshot, register_bundle
@@ -32,6 +33,16 @@ if scoped_bundle.has_core_data:
     critical = filter_critical_drums(snapshot, horizon_days=30)
     review = filter_review_drums(snapshot)
     kpis = build_kpis(snapshot, attention_horizon_days=30)
+    freshness = get_data_freshness(snapshot)
+
+    st.caption(
+        f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage"
+    )
+    if freshness["is_stale"]:
+        st.warning(
+            "Die Daten sind historisch und werden nicht als Live-Bestand interpretiert. "
+            "Alle Bestell- und Risikoangaben beziehen sich auf den letzten Messzeitpunkt im Datensatz."
+        )
 
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Trommeln", kpis["drums"])
@@ -44,7 +55,7 @@ if scoped_bundle.has_core_data:
     st.markdown(
         """
         - berechnet Restreichweiten und sichere Bestellzeitpunkte
-        - identifiziert kritische Trommeln und Forecast-Risiken
+        - identifiziert kritische Trommeln, Telemetrieprobleme und Forecast-Risiken
         - schlägt Bestell-Bündel vor, um Kosten zu senken
         - beantwortet Rückfragen im Chat auf Basis von Daten-Tools
         """
@@ -59,6 +70,7 @@ if scoped_bundle.has_core_data:
         "predicted_empty_date",
         "latest_safe_order_date",
         "forecast_status",
+        "review_reason",
         "estimated_order_value_eur",
         "risk_label",
     ]
@@ -69,7 +81,28 @@ if scoped_bundle.has_core_data:
         width="stretch",
         hide_index=True,
     )
-    
+
+    st.subheader("Trommeln mit Prüfbedarf")
+    st.dataframe(
+        without_tenant(
+            display_snapshot(
+                review[
+                    [
+                        "drum_id",
+                        "rack",
+                        "product",
+                        "forecast_status",
+                        "review_reason",
+                        "sensor_readings_count",
+                        "avg_battery_voltage",
+                        "avg_signal_strength",
+                    ]
+                ]
+            )
+        ),
+        width="stretch",
+        hide_index=True,
+    )
 else:
     st.warning("Für dieses Kundenkonto wurden noch keine vollständigen Daten gefunden.")
     st.markdown(

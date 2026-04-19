@@ -6,6 +6,7 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from src.config import DEFAULT_DEMO_PASSWORD
 from src.load_data import DataBundle
 
 SESSION_AUTHENTICATED = "authenticated_customer"
@@ -58,10 +59,7 @@ def _customer_passwords(customers: list[str]) -> dict[str, str]:
     if configured:
         return configured
 
-    return {
-        customer: "kunde-a-demo" if customer == "Kunde A" else "kunde-b-demo"
-        for customer in customers
-    }
+    return {customer: DEFAULT_DEMO_PASSWORD for customer in customers}
 
 
 def get_current_customer() -> str | None:
@@ -88,7 +86,7 @@ def _show_login_form(customers: list[str], passwords: dict[str, str]) -> None:
     using_demo_passwords = len(configured) == 0
     if using_demo_passwords:
         st.info(
-            "Demo-Logins aktiv. Bitte die Passwörter in `.streamlit/secrets.toml` unter `CUSTOMER_PASSWORDS` ersetzen."
+            f"Demo-Logins aktiv. Default-Passwort für alle Konten: `{DEFAULT_DEMO_PASSWORD}`. Bitte die Passwörter in `.streamlit/secrets.toml` unter `CUSTOMER_PASSWORDS` ersetzen."
         )
 
     with st.form("login_form", clear_on_submit=False):

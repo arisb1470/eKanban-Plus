@@ -56,20 +56,35 @@ EXPECTED_NUMERIC_COLUMNS = [
 ]
 
 DATE_COLUMNS = ["date"]
+STRING_COLUMNS = ["tenant", "rack", "product", "part_number", "product_name"]
+
+
+def _normalize_part_number(series: pd.Series) -> pd.Series:
+    normalized = series.astype("string").str.strip()
+    digit_mask = normalized.str.fullmatch(r"\d+")
+    normalized.loc[digit_mask.fillna(False)] = normalized.loc[digit_mask.fillna(False)].str.zfill(7)
+    return normalized
 
 
 def _standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
     clean = df.copy()
     clean.columns = [c.strip() for c in clean.columns]
+
     for col in DATE_COLUMNS:
         if col in clean.columns:
             clean[col] = pd.to_datetime(clean[col], errors="coerce")
+
     for col in EXPECTED_NUMERIC_COLUMNS:
         if col in clean.columns:
             clean[col] = pd.to_numeric(clean[col], errors="coerce")
-    for col in ["tenant", "rack", "product", "part_number", "product_name"]:
+
+    for col in STRING_COLUMNS:
         if col in clean.columns:
-            clean[col] = clean[col].astype("string")
+            clean[col] = clean[col].astype("string").str.strip()
+
+    if "part_number" in clean.columns:
+        clean["part_number"] = _normalize_part_number(clean["part_number"])
+
     return clean
 
 
@@ -147,6 +162,10 @@ def load_demo_business_rules() -> list[dict[str, Any]]:
         {
             "title": "Mindestbestellwert",
             "text": "Unter 150 EUR netto wird zusätzlich ein Zuschlag von 20 EUR berechnet.",
+        },
+        {
+            "title": "Schnittkosten",
+            "text": "Für Nicht-Standardlängen fällt pro Schnitt ein Zuschlag von 20 EUR an.",
         },
         {
             "title": "Sicherheitspuffer",

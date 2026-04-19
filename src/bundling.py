@@ -4,7 +4,7 @@ import hashlib
 
 import pandas as pd
 
-from src.analytics import compare_individual_vs_bundle
+from src.analytics import compare_individual_vs_bundle, get_snapshot_as_of
 from src.config import DEFAULT_BUNDLE_HORIZON_DAYS, DEFAULT_BUNDLE_WINDOW_DAYS
 
 
@@ -64,10 +64,10 @@ def build_bundle_candidates(
         return pd.DataFrame()
 
     df = latest_snapshot.copy()
-    today = pd.Timestamp.today().normalize()
+    reference_date = get_snapshot_as_of(df)
 
     df = df[df["latest_safe_order_date"].notna()].copy()
-    df = df[df["latest_safe_order_date"].dt.normalize() <= today + pd.Timedelta(days=horizon_days)]
+    df = df[df["latest_safe_order_date"].dt.normalize() <= reference_date + pd.Timedelta(days=horizon_days)]
 
     if df.empty:
         return pd.DataFrame()
@@ -95,6 +95,7 @@ def build_bundle_candidates(
                     "drum_count": int(cluster["drum_id"].nunique()),
                     "drum_ids": ", ".join(cluster["drum_id"].astype(int).astype(str).tolist()),
                     "bundle_value_eur": cost_compare["bundle_value_eur"],
+                    "bundle_cutting_eur": cost_compare["bundle_cutting_eur"],
                     "individual_total_eur": cost_compare["individual_total_eur"],
                     "bundle_total_eur": cost_compare["bundle_total_eur"],
                     "savings_eur": cost_compare["savings_eur"],
