@@ -37,7 +37,7 @@ def _frame_preview(df: pd.DataFrame, columns: list[str] | None = None, limit: in
 def get_general_summary(snapshot: pd.DataFrame) -> dict[str, Any]:
     kpis = build_kpis(snapshot)
     summary = (
-        f"Im aktuellen Snapshot sind {kpis['drums']} Trommeln enthalten. "
+        f"Im aktuellen Datenstand sind {kpis['drums']} Trommeln enthalten. "
         f"Davon sind {kpis['critical']} kritisch, {kpis['attention']} haben Handlungsbedarf "
         f"und {kpis['review']} haben Prüfbedarf. "
         f"Die durchschnittliche Restreichweite beträgt {kpis['avg_days_left']} Tage."
@@ -125,7 +125,7 @@ def get_bundle_candidates(snapshot: pd.DataFrame, horizon_days: int = 14) -> dic
     summary = (
         f"Es wurden {len(bundles)} Bündel-Kandidaten gefunden. "
         f"Der erste Kandidat spart voraussichtlich {best['savings_eur']:.2f} € "
-        f"bei einem Bundle-Wert von {best['bundle_value_eur']:.2f} €."
+        f"bei einem Bündelwert von {best['bundle_value_eur']:.2f} €."
     )
 
     return {
@@ -140,7 +140,7 @@ def get_bundle_details(snapshot: pd.DataFrame, bundles: pd.DataFrame, bundle_id:
     details = bundle_details(snapshot, bundle_id, bundles)
 
     return {
-        "summary": f"Bundle {bundle_id} enthält {len(details)} Trommeln.",
+        "summary": f"Bündel {bundle_id} enthält {len(details)} Trommeln.",
         "count": len(details),
         "data_preview": _frame_preview(details, JSON_COLUMNS),
     }

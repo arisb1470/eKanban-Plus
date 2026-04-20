@@ -7,6 +7,7 @@ from src.analytics import enrich_latest_snapshot, get_data_freshness
 from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer
 from src.db import register_bundle
 from src.load_data import load_data, merge_racks
+from src.ui import apply_app_styles, format_value, render_table
 
 
 def _best_history_for_drum(bundle, all_racks: pd.DataFrame, drum_id: int) -> tuple[pd.DataFrame, str]:
@@ -34,12 +35,14 @@ def _best_history_for_drum(bundle, all_racks: pd.DataFrame, drum_id: int) -> tup
     return rack_history, "Rack-Export"
 
 
+apply_app_styles()
+
 bundle = load_data()
 customer = require_login(bundle)
 render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
-st.title("Drum Explorer")
+st.title("Trommel-Explorer")
 
 if not scoped_bundle.has_core_data:
     st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
@@ -67,13 +70,10 @@ history, history_source = _best_history_for_drum(scoped_bundle, all_racks, selec
 
 metric_cols = st.columns(5)
 current_length = latest.get("current_length_m")
-metric_cols[0].metric(
-    "Bestand am Snapshot",
-    f"{float(current_length):.1f} m" if current_length is not None and str(current_length) != "nan" else "—",
-)
+metric_cols[0].metric("Bestand am Datenstand", format_value("current_length_m", current_length))
 
 if latest.get("days_left") is not None and str(latest.get("days_left")) != "nan":
-    days_left_label = f"{float(latest['days_left']):.1f} Tage"
+    days_left_label = format_value("days_left", latest["days_left"])
 else:
     status = latest.get("forecast_status", "")
     if status == "kein aktueller Verbrauch":
@@ -85,39 +85,35 @@ else:
 metric_cols[1].metric("Restreichweite", days_left_label)
 
 safe_order_date = latest.get("latest_safe_order_date")
-metric_cols[2].metric(
-    "Sicher bestellen bis",
-    "—" if safe_order_date is None or str(safe_order_date) == "NaT" else str(safe_order_date).split(" ")[0],
-)
-metric_cols[3].metric("Prognosestatus", latest.get("forecast_status", "—"))
-metric_cols[4].metric("Review", latest.get("review_reason", "—"))
+metric_cols[2].metric("Sicher bestellen bis", format_value("latest_safe_order_date", safe_order_date))
+metric_cols[3].metric("Prognosestatus", format_value("forecast_status", latest.get("forecast_status", "—")))
+metric_cols[4].metric("Prüfgrund", format_value("review_reason", latest.get("review_reason", "—")))
 st.caption(
-    f"Snapshot vom {str(latest.get('date')).split(' ')[0]} · Prognosegüte: {latest.get('forecast_confidence', '—')} · Quelle Verlauf: {history_source}"
+    f"Datenstand vom {format_value('date', latest.get('date'))} · Prognosegüte: {format_value('forecast_confidence', latest.get('forecast_confidence', '—'))} · Quelle Verlauf: {history_source}"
 )
 
 st.subheader("Zeitverlauf")
 chart_df = history[["date", "daily_avg_cable_length_m", "linear_forecast_m"]].dropna(subset=["date"]).set_index("date")
 st.line_chart(chart_df)
 
-st.subheader("Drum-Metadaten")
-st.json(
-    {
-        "drum_id": int(latest["drum_id"]),
-        "rack": latest.get("rack"),
-        "product": latest.get("product"),
-        "part_number": latest.get("part_number"),
-        "predicted_empty_date": str(latest.get("predicted_empty_date")).split(" ")[0]
-        if str(latest.get("predicted_empty_date")) != "NaT"
-        else None,
-        "latest_safe_order_date": str(latest.get("latest_safe_order_date")).split(" ")[0]
-        if str(latest.get("latest_safe_order_date")) != "NaT"
-        else None,
-        "material_order_value_eur": float(latest.get("material_order_value_eur", 0.0)),
-        "cutting_cost_eur": float(latest.get("cutting_cost_eur", 0.0)),
-        "estimated_order_value_eur": float(latest.get("estimated_order_value_eur", 0.0)),
-        "forecast_status": latest.get("forecast_status"),
-        "forecast_confidence": latest.get("forecast_confidence"),
-        "review_reason": latest.get("review_reason"),
-        "risk_label": latest.get("risk_label"),
-    }
+st.subheader("Trommel-Metadaten")
+metadata = pd.DataFrame(
+    [
+        {
+            "drum_id": int(latest["drum_id"]),
+            "rack": latest.get("rack"),
+            "product": latest.get("product"),
+            "part_number": latest.get("part_number"),
+            "predicted_empty_date": latest.get("predicted_empty_date"),
+            "latest_safe_order_date": latest.get("latest_safe_order_date"),
+            "material_order_value_eur": latest.get("material_order_value_eur", 0.0),
+            "cutting_cost_eur": latest.get("cutting_cost_eur", 0.0),
+            "estimated_order_value_eur": latest.get("estimated_order_value_eur", 0.0),
+            "forecast_status": latest.get("forecast_status"),
+            "forecast_confidence": latest.get("forecast_confidence"),
+            "review_reason": latest.get("review_reason"),
+            "risk_label": latest.get("risk_label"),
+        }
+    ]
 )
+render_table(metadata)

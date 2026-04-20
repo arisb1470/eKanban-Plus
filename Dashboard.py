@@ -4,21 +4,22 @@ import streamlit as st
 
 from src.analytics import (
     build_kpis,
-    display_snapshot,
     enrich_latest_snapshot,
     filter_critical_drums,
     filter_review_drums,
     get_data_freshness,
 )
-from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer, without_tenant
+from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer
 from src.db import get_latest_snapshot, register_bundle
 from src.load_data import load_data
+from src.ui import apply_app_styles, render_table
 
 st.set_page_config(
     page_title="LAPP eKanban Plus",
     page_icon="📦",
     layout="wide",
 )
+apply_app_styles()
 
 bundle = load_data()
 customer = require_login(bundle)
@@ -76,32 +77,22 @@ if scoped_bundle.has_core_data:
     ]
 
     st.subheader("Trommeln mit Handlungsbedarf im 30-Tage-Horizont")
-    st.dataframe(
-        without_tenant(display_snapshot(critical[preview_cols])),
-        width="stretch",
-        hide_index=True,
-    )
+    render_table(critical[preview_cols])
 
     st.subheader("Trommeln mit Prüfbedarf")
-    st.dataframe(
-        without_tenant(
-            display_snapshot(
-                review[
-                    [
-                        "drum_id",
-                        "rack",
-                        "product",
-                        "forecast_status",
-                        "review_reason",
-                        "sensor_readings_count",
-                        "avg_battery_voltage",
-                        "avg_signal_strength",
-                    ]
-                ]
-            )
-        ),
-        width="stretch",
-        hide_index=True,
+    render_table(
+        review[
+            [
+                "drum_id",
+                "rack",
+                "product",
+                "forecast_status",
+                "review_reason",
+                "sensor_readings_count",
+                "avg_battery_voltage",
+                "avg_signal_strength",
+            ]
+        ]
     )
 else:
     st.warning("Für dieses Kundenkonto wurden noch keine vollständigen Daten gefunden.")
@@ -122,5 +113,5 @@ else:
 st.divider()
 st.subheader("Navigation")
 st.markdown(
-    "Nutze die Seitenleiste für **Overview**, **Bundle Optimizer**, **Chat Assistant** und **Drum Explorer**."
+    "Nutze die Seitenleiste für **Überblick**, **Bündeloptimierung**, **Chat-Assistent** und **Trommel-Explorer**."
 )

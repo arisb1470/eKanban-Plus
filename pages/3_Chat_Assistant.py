@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from src.analytics import enrich_latest_snapshot
@@ -16,13 +17,16 @@ from src.tools import (
     get_drum_status,
     get_general_summary,
 )
+from src.ui import apply_app_styles, render_table
+
+apply_app_styles()
 
 bundle = load_data()
 customer = require_login(bundle)
 render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
-st.title("Chat Assistant")
+st.title("Chat-Assistent")
 
 if not scoped_bundle.has_core_data:
     st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
@@ -33,11 +37,11 @@ snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricin
 _ = build_bundle_candidates(snapshot)
 rules = load_demo_business_rules()
 
-st.caption("Der Chat nutzt Daten-Tools für Fakten und ein Cloud-LLM nur für die Formulierung.")
+st.caption("Der Chat nutzt Daten-Tools für Fakten und ein Cloud-Modell nur für die Formulierung.")
 if llm_is_available():
     st.success("Chatbot verfügbar")
 else:
-    st.warning("Kein API-Key gefunden — Chat läuft im Fallback-Modus.")
+    st.warning("Kein API-Schlüssel gefunden — der Chat läuft im Ersatzmodus.")
 
 if st.session_state.get("chat_customer") != customer:
     st.session_state.chat_customer = customer
@@ -69,9 +73,9 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if message.get("preview"):
-            st.dataframe(message["preview"], width='stretch', hide_index=True)
+            render_table(pd.DataFrame(message["preview"]), prepare=False)
 
-prompt = st.chat_input("Frage zu Risiko, Trommeln, Bestellzeitpunkt oder Bundling ...")
+prompt = st.chat_input("Frage zu Risiko, Trommeln, Bestellzeitpunkt oder Bündelung ...")
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
 
@@ -102,4 +106,4 @@ if prompt:
     with st.chat_message("assistant"):
         st.markdown(answer)
         if preview:
-            st.dataframe(preview, width='stretch', hide_index=True)
+            render_table(pd.DataFrame(preview), prepare=False)

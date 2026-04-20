@@ -79,14 +79,14 @@ def logout() -> None:
 
 def _show_login_form(customers: list[str], passwords: dict[str, str]) -> None:
     st.title("LAPP eKanban Plus")
-    st.subheader("Login")
+    st.subheader("Anmeldung")
     st.markdown("Bitte mit dem eigenen Kundenkonto anmelden.")
 
     configured = _secrets_customer_passwords()
     using_demo_passwords = len(configured) == 0
     if using_demo_passwords:
         st.info(
-            f"Demo-Logins aktiv. Default-Passwort für alle Konten: `{DEFAULT_DEMO_PASSWORD}`. Bitte die Passwörter in `.streamlit/secrets.toml` unter `CUSTOMER_PASSWORDS` ersetzen."
+            f"Demo-Anmeldungen aktiv. Standardpasswort für alle Konten: `{DEFAULT_DEMO_PASSWORD}`. Bitte die Passwörter in `.streamlit/secrets.toml` unter `CUSTOMER_PASSWORDS` ersetzen."
         )
 
     with st.form("login_form", clear_on_submit=False):
@@ -127,7 +127,7 @@ def render_sidebar_auth() -> str:
 
     with st.sidebar:
         st.success(f"Angemeldet als {customer}")
-        if st.button("Logout", use_container_width=True):
+        if st.button("Abmelden", use_container_width=True):
             logout()
             st.rerun()
     return customer
