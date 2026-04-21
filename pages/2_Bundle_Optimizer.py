@@ -27,10 +27,6 @@ snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricin
 freshness = get_data_freshness(snapshot)
 
 st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
-if freshness["is_stale"]:
-    st.warning(
-        "Die Bündel-Empfehlungen werden relativ zum letzten Datenstand im Datensatz berechnet, damit historische Daten nicht wie Echtzeitdaten behandelt werden."
-    )
 
 horizon = st.slider("Planungshorizont (Tage)", min_value=3, max_value=30, value=14)
 window = st.slider("Bündelungsfenster (Tage)", min_value=2, max_value=10, value=5)

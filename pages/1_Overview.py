@@ -35,10 +35,6 @@ review = filter_review_drums(snapshot)
 freshness = get_data_freshness(snapshot)
 
 st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
-if freshness["is_stale"]:
-    st.warning(
-        "Historischer Datensatz: Restreichweiten und Bestelltermine sind auf den letzten Messzeitpunkt im Datensatz bezogen, nicht auf heute."
-    )
 
 metric_cols = st.columns(6)
 metric_cols[0].metric("Trommeln", kpis["drums"])

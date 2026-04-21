@@ -57,10 +57,6 @@ snapshot = enrich_latest_snapshot(
 freshness = get_data_freshness(snapshot)
 
 st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
-if freshness["is_stale"]:
-    st.warning(
-        "Die angezeigten Bestands- und Prognosewerte beziehen sich auf den letzten erfassten Messpunkt im Datensatz."
-    )
 
 available_drums = sorted(snapshot["drum_id"].dropna().astype(int).unique().tolist())
 selected_drum = st.selectbox("Trommel wählen", available_drums)

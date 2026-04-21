@@ -39,11 +39,6 @@ if scoped_bundle.has_core_data:
     st.caption(
         f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage"
     )
-    if freshness["is_stale"]:
-        st.warning(
-            "Die Daten sind historisch und werden nicht als Live-Bestand interpretiert. "
-            "Alle Bestell- und Risikoangaben beziehen sich auf den letzten Messzeitpunkt im Datensatz."
-        )
 
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Trommeln", kpis["drums"])
