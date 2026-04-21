@@ -56,6 +56,7 @@ COLUMN_LABELS: dict[str, str] = {
     "avg_signal_strength": "Signalstärke",
     "telemetry_issue": "Telemetrieproblem",
     "tenant": "Kunde",
+    "attention_reason": "Grund für Handlungsbedarf",
 }
 
 VALUE_LABELS: dict[str, dict[Any, Any]] = {

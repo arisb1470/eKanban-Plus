@@ -21,6 +21,7 @@ JSON_COLUMNS = [
     "forecast_status",
     "forecast_confidence",
     "risk_label",
+    "attention_reason",
 ]
 
 
@@ -34,12 +35,19 @@ def _frame_preview(df: pd.DataFrame, columns: list[str] | None = None, limit: in
     return mask_tenant_records(preview.to_dict(orient="records"))
 
 
+def _reference_date(snapshot: pd.DataFrame) -> pd.Timestamp:
+    for column in ["snapshot_as_of_date", "date"]:
+        if column in snapshot.columns and snapshot[column].notna().any():
+            return pd.to_datetime(snapshot[column], errors="coerce").dropna().max().normalize()
+    return pd.Timestamp.today().normalize()
+
+
 def get_general_summary(snapshot: pd.DataFrame) -> dict[str, Any]:
     kpis = build_kpis(snapshot)
     summary = (
         f"Im aktuellen Datenstand sind {kpis['drums']} Trommeln enthalten. "
-        f"Davon sind {kpis['critical']} kritisch, {kpis['attention']} haben Handlungsbedarf "
-        f"und {kpis['review']} haben Prüfbedarf. "
+        f"Davon haben {kpis['attention']} Trommeln Handlungsbedarf, "
+        f"{kpis['critical']} sind kritisch und {kpis['review']} haben Prüfbedarf. "
         f"Die durchschnittliche Restreichweite beträgt {kpis['avg_days_left']} Tage."
     )
     return {
@@ -59,6 +67,7 @@ def get_drum_status(snapshot: pd.DataFrame, drum_id: int) -> dict[str, Any]:
 
     row = df.iloc[0]
     forecast_status = row.get("forecast_status", "ok")
+
     if pd.notna(row.get("days_left")):
         range_text = f"eine Restreichweite von {row.get('days_left')} Tagen"
     elif forecast_status == "kein aktueller Verbrauch":
@@ -82,18 +91,98 @@ def get_drum_status(snapshot: pd.DataFrame, drum_id: int) -> dict[str, Any]:
     }
 
 
-def find_critical_drums(snapshot: pd.DataFrame, horizon_days: int = 7) -> dict[str, Any]:
-    critical = filter_critical_drums(snapshot, horizon_days=horizon_days)
+def find_critical_drums(snapshot: pd.DataFrame, horizon_days: int = 30) -> dict[str, Any]:
+    critical = filter_critical_drums(snapshot, horizon_days=horizon_days).copy()
+
+    if critical.empty:
+        return {
+            "summary": f"Es gibt aktuell keine Trommeln mit Handlungsbedarf im Horizont von {horizon_days} Tagen.",
+            "horizon_days": horizon_days,
+            "count": 0,
+            "definition": (
+                "Handlungsbedarf bedeutet: Risikostatus kritisch/bald fällig/beobachten "
+                "oder Restreichweite innerhalb des Horizonts oder spätester sicherer Bestelltermin innerhalb des Horizonts."
+            ),
+            "data_preview": [],
+        }
+
+    as_of_date = _reference_date(snapshot)
+    horizon_date = as_of_date + pd.Timedelta(days=horizon_days)
+
+    risk_label_series = critical.get("risk_label", pd.Series(index=critical.index, dtype="object"))
+    risk_reason = risk_label_series.astype("string").str.lower().isin(["kritisch", "bald fällig", "beobachten"])
+
+    days_left_series = pd.to_numeric(critical.get("days_left"), errors="coerce")
+    days_left_reason = days_left_series <= horizon_days
+
+    safe_order_series = pd.to_datetime(critical.get("latest_safe_order_date"), errors="coerce")
+    safe_order_reason = safe_order_series.notna() & (safe_order_series <= horizon_date)
+
+    critical["attention_reason"] = ""
+
+    reasons: list[str] = []
+    for idx in critical.index:
+        row_reasons: list[str] = []
+
+        if bool(risk_reason.loc[idx]):
+            row_reasons.append(f"Risikostatus: {critical.loc[idx, 'risk_label']}")
+
+        if pd.notna(days_left_series.loc[idx]) and bool(days_left_reason.loc[idx]):
+            row_reasons.append(f"Restreichweite ≤ {horizon_days} Tage")
+
+        if pd.notna(safe_order_series.loc[idx]) and bool(safe_order_reason.loc[idx]):
+            row_reasons.append("spätester Bestelltermin liegt im Horizont")
+
+        if not row_reasons:
+            row_reasons.append("durch kombinierte Handlungslogik markiert")
+
+        reason_text = "; ".join(row_reasons)
+        critical.loc[idx, "attention_reason"] = reason_text
+        reasons.append(reason_text)
+
+    risk_count = int(risk_reason.fillna(False).sum())
+    days_left_count = int(days_left_reason.fillna(False).sum())
+    safe_order_count = int(safe_order_reason.fillna(False).sum())
 
     summary = (
-        f"{len(critical)} Trommeln benötigen im Horizont von {horizon_days} Tagen Aufmerksamkeit."
+        f"{len(critical)} Trommeln haben Handlungsbedarf im Horizont von {horizon_days} Tagen. "
+        f"Definition: Handlungsbedarf bedeutet mindestens eines der folgenden Kriterien: "
+        f"Risikostatus kritisch/bald fällig/beobachten, Restreichweite ≤ {horizon_days} Tage "
+        f"oder spätester sicherer Bestelltermin bis {horizon_date.strftime('%d.%m.%Y')}. "
+        f"Gründe im aktuellen Ergebnis (Mehrfachnennungen möglich): "
+        f"{risk_count} wegen Risikostatus, "
+        f"{days_left_count} wegen Restreichweite im Horizont, "
+        f"{safe_order_count} wegen Bestelltermin im Horizont."
     )
+
+    preview_columns = [
+        "drum_id",
+        "rack",
+        "product",
+        "current_length_m",
+        "days_left",
+        "latest_safe_order_date",
+        "risk_label",
+        "forecast_status",
+        "attention_reason",
+    ]
 
     return {
         "summary": summary,
         "horizon_days": horizon_days,
         "count": len(critical),
-        "data_preview": _frame_preview(critical, JSON_COLUMNS),
+        "definition": (
+            "Handlungsbedarf ist eine Aktionslogik, keine reine Reichweitenlogik. "
+            "Er entsteht durch Risikostatus, Restreichweite im Horizont oder sicheren Bestelltermin im Horizont."
+        ),
+        "reason_breakdown": {
+            "risk_status_count": risk_count,
+            "days_left_within_horizon_count": days_left_count,
+            "safe_order_date_within_horizon_count": safe_order_count,
+            "reference_date": as_of_date.strftime("%d.%m.%Y"),
+            "horizon_date": horizon_date.strftime("%d.%m.%Y"),
+        },
+        "data_preview": _frame_preview(critical, preview_columns),
     }
 
 

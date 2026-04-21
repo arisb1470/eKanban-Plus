@@ -78,11 +78,13 @@ def ask_llm(
     question: str,
     tool_result: dict[str, Any],
     retrieval_context: list[dict[str, str]] | None = None,
+    conversation_history: list[dict[str, str]] | None = None,
 ) -> str:
     prompt = build_answer_prompt(
         question=question,
         tool_result=tool_result,
         retrieval_context=retrieval_context,
+        conversation_history=conversation_history,
     )
     try:
         client = _get_client()
@@ -97,23 +99,31 @@ def ask_llm(
         if text:
             return text
     except Exception as exc:
-        return fallback_answer(question, tool_result, retrieval_context, error=str(exc))
-    return fallback_answer(question, tool_result, retrieval_context)
+        return fallback_answer(question, tool_result, retrieval_context, conversation_history, error=str(exc))
+    return fallback_answer(question, tool_result, retrieval_context, conversation_history)
 
 
 def fallback_answer(
     question: str,
     tool_result: dict[str, Any],
     retrieval_context: list[dict[str, str]] | None = None,
+    conversation_history: list[dict[str, str]] | None = None,
     error: str | None = None,
 ) -> str:
     lines = [f"**Frage:** {question}", "", "**Ergebnis:**"]
     summary = tool_result.get("summary")
     if summary:
         lines.append(f"- {summary}")
+    if "count" in tool_result:
+        lines.append(f"- Anzahl: {tool_result['count']}")
     if "data_preview" in tool_result:
         preview = tool_result["data_preview"]
         lines.append(f"- Datenpunkte im Preview: {len(preview)}")
+    if conversation_history:
+        lines.append("")
+        lines.append("**Gesprächskontext:**")
+        for item in conversation_history[-3:]:
+            lines.append(f"- {item.get('role', 'user')}: {item.get('content', '')}")
     if retrieval_context:
         lines.append("")
         lines.append("**Relevante Regeln:**")
