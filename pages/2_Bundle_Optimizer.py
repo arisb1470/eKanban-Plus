@@ -7,7 +7,7 @@ from src.auth import render_sidebar_auth, require_login, scope_bundle_to_custome
 from src.bundling import build_bundle_candidates, bundle_details
 from src.db import get_latest_snapshot, register_bundle
 from src.load_data import load_data
-from src.ui import apply_app_styles, render_table
+from src.ui import apply_app_styles, render_page_header, render_table
 
 apply_app_styles()
 
@@ -16,7 +16,11 @@ customer = require_login(bundle)
 render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
-st.title("Bündeloptimierung")
+render_page_header(
+    "Bündeloptimierung",
+    "Finde sinnvolle Sammelbestellungen innerhalb eines Planungshorizonts und vergleiche direkte Kosteneffekte.",
+    badge=f"Kundenkonto: {customer}",
+)
 
 if not scoped_bundle.has_core_data:
     st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
@@ -28,8 +32,11 @@ freshness = get_data_freshness(snapshot)
 
 st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
 
-horizon = st.slider("Planungshorizont (Tage)", min_value=3, max_value=30, value=14)
-window = st.slider("Bündelungsfenster (Tage)", min_value=2, max_value=10, value=5)
+control_left, control_right = st.columns(2)
+with control_left:
+    horizon = st.slider("Planungshorizont (Tage)", min_value=3, max_value=30, value=14)
+with control_right:
+    window = st.slider("Bündelungsfenster (Tage)", min_value=2, max_value=10, value=5)
 
 bundles = build_bundle_candidates(snapshot, horizon_days=horizon, window_days=window)
 if bundles.empty:

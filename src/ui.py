@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import html
 
 import pandas as pd
 import streamlit as st
@@ -120,26 +121,300 @@ def apply_app_styles() -> None:
     st.markdown(
         """
         <style>
-        div[data-testid="stDataFrame"] {
-            border: 1px solid rgba(120, 120, 140, 0.18);
-            border-radius: 14px;
-            overflow: hidden;
+        :root {
+            --app-bg: #f4f7fb;
+            --app-surface: #ffffff;
+            --app-surface-soft: #f8fbff;
+            --app-surface-strong: #eaf2ff;
+            --app-border: #d7e2f0;
+            --app-text: #0f172a;
+            --app-muted: #475569;
+            --app-primary: #2563eb;
+            --app-primary-dark: #1d4ed8;
+            --app-primary-soft: #dbeafe;
+            --app-success-bg: #dcfce7;
+            --app-success-text: #166534;
+            --app-warning-bg: #fef3c7;
+            --app-warning-text: #92400e;
+            --app-danger-bg: #fee2e2;
+            --app-danger-text: #991b1b;
+            --app-info-bg: #e0f2fe;
+            --app-info-text: #0f4c81;
+            --shadow-soft: 0 14px 40px rgba(15, 23, 42, 0.08);
         }
-        div[data-testid="stDataFrame"] thead tr th {
-            background: rgba(59, 130, 246, 0.10);
+
+        html, body, [class*="css"] {
+            color: var(--app-text);
+        }
+
+        .stApp,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"] {
+            background:
+                radial-gradient(circle at top right, rgba(37, 99, 235, 0.10), transparent 24%),
+                radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 26%),
+                linear-gradient(180deg, #f9fbff 0%, var(--app-bg) 100%);
+            color: var(--app-text);
+        }
+
+        .block-container {
+            max-width: 1440px;
+            padding-top: 2rem;
+            padding-bottom: 2.5rem;
+        }
+
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+            border-right: 1px solid var(--app-border);
+        }
+
+        [data-testid="stSidebar"] * {
+            color: var(--app-text);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--app-text);
+            letter-spacing: -0.02em;
+        }
+
+        p, li, label, .stCaption, .stMarkdown, .stText, small {
+            color: var(--app-muted);
+        }
+
+        .app-hero {
+            background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(239,246,255,0.98) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.16);
+            border-radius: 26px;
+            padding: 1.4rem 1.6rem;
+            margin: 0 0 1.15rem 0;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .app-hero__top {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .app-hero h1 {
+            margin: 0;
+            color: var(--app-text);
+            font-size: clamp(1.7rem, 2.3vw, 2.45rem);
+            line-height: 1.1;
+        }
+
+        .app-hero p {
+            margin: 0.55rem 0 0 0;
+            color: var(--app-muted);
+            font-size: 1rem;
+            line-height: 1.55;
+            max-width: 62rem;
+        }
+
+        .app-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.36rem 0.72rem;
+            border-radius: 999px;
+            background: var(--app-primary-soft);
+            color: #1e3a8a;
+            font-size: 0.84rem;
+            font-weight: 700;
+            border: 1px solid rgba(37, 99, 235, 0.14);
+        }
+
+        div[data-testid="stMetric"] {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid var(--app-border);
+            border-radius: 22px;
+            padding: 0.9rem 1rem;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        div[data-testid="stMetricLabel"] {
+            color: var(--app-muted) !important;
             font-weight: 600;
         }
-        div[data-testid="stDataFrame"] tbody tr:nth-child(even) {
-            background: rgba(255, 255, 255, 0.015);
+
+        div[data-testid="stMetricValue"] {
+            color: var(--app-text) !important;
+            font-weight: 750;
         }
+
+        div[data-testid="stMetricDelta"] {
+            color: var(--app-primary-dark) !important;
+            font-weight: 650;
+        }
+
+        .stButton > button,
+        div[data-testid="stFormSubmitButton"] > button {
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-primary-dark) 100%);
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+        }
+
+        .stButton > button:hover,
+        div[data-testid="stFormSubmitButton"] > button:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: #ffffff;
+        }
+
+        .stButton > button:focus,
+        div[data-testid="stFormSubmitButton"] > button:focus,
+        .stButton > button:focus-visible,
+        div[data-testid="stFormSubmitButton"] > button:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.22);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+        }
+
+        div[data-baseweb="select"] > div,
+        .stTextInput > div > div > input,
+        .stNumberInput input,
+        .stDateInput input,
+        textarea,
+        .stSlider [data-baseweb="slider"] {
+            background: rgba(255, 255, 255, 0.96) !important;
+            color: var(--app-text) !important;
+            border-color: var(--app-border) !important;
+        }
+
+        div[data-baseweb="select"] * ,
+        .stTextInput input,
+        textarea,
+        .stNumberInput input,
+        .stDateInput input {
+            color: var(--app-text) !important;
+        }
+
+        .stTabs [role="tablist"] {
+            gap: 0.4rem;
+        }
+
+        .stTabs [role="tab"] {
+            border-radius: 999px;
+            padding: 0.45rem 0.9rem;
+            border: 1px solid var(--app-border);
+            background: rgba(255,255,255,0.8);
+            color: var(--app-muted);
+        }
+
+        .stTabs [aria-selected="true"] {
+            background: var(--app-primary-soft) !important;
+            color: #1e3a8a !important;
+            border-color: rgba(37, 99, 235, 0.24) !important;
+        }
+
+        div[data-testid="stDataFrame"] {
+            border: 1px solid var(--app-border);
+            border-radius: 18px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+        }
+
+        div[data-testid="stDataFrame"] thead tr th {
+            background: #eff6ff !important;
+            color: #1e3a8a !important;
+            font-weight: 700 !important;
+            border-bottom: 1px solid rgba(37, 99, 235, 0.14);
+        }
+
+        div[data-testid="stDataFrame"] tbody tr:nth-child(even) {
+            background: rgba(248, 250, 252, 0.85);
+        }
+
         div[data-testid="stDataFrame"] tbody tr:hover {
-            background: rgba(59, 130, 246, 0.08);
+            background: rgba(219, 234, 254, 0.65) !important;
+        }
+
+        div[data-testid="stDataFrame"] tbody td {
+            color: var(--app-text) !important;
+        }
+
+        [data-testid="stAlertContainer"] [data-testid="stMarkdownContainer"] p {
+            margin-bottom: 0;
+        }
+
+        [data-testid="stAlertContainer"] {
+            border-radius: 18px;
+        }
+
+        [data-baseweb="notification"] {
+            border-radius: 18px !important;
+            border: 1px solid var(--app-border) !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+        }
+
+        .stSuccess [data-baseweb="notification"] {
+            background: linear-gradient(180deg, #f3fff7 0%, #ebfff2 100%) !important;
+        }
+
+        .stInfo [data-baseweb="notification"] {
+            background: linear-gradient(180deg, #f2fbff 0%, #eaf7ff 100%) !important;
+        }
+
+        .stWarning [data-baseweb="notification"] {
+            background: linear-gradient(180deg, #fffaf0 0%, #fff5dd 100%) !important;
+        }
+
+        .stError [data-baseweb="notification"] {
+            background: linear-gradient(180deg, #fff5f5 0%, #ffeded 100%) !important;
+        }
+
+        details {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid var(--app-border);
+            border-radius: 18px;
+            padding: 0.3rem 0.8rem;
+        }
+
+        details summary {
+            color: var(--app-text);
+            font-weight: 700;
+        }
+
+        [data-testid="stChatMessage"] {
+            background: rgba(255,255,255,0.78);
+            border: 1px solid rgba(215, 226, 240, 0.9);
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        hr {
+            border-color: rgba(148, 163, 184, 0.22);
+        }
+
+        a {
+            color: var(--app-primary-dark);
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
+
+def render_page_header(title: str, subtitle: str, badge: str | None = None) -> None:
+    badge_html = ""
+    if badge:
+        badge_html = f'<span class="app-badge">{html.escape(badge)}</span>'
+
+    st.markdown(
+        f"""
+        <section class="app-hero">
+            <div class="app-hero__top">{badge_html}</div>
+            <h1>{html.escape(title)}</h1>
+            <p>{html.escape(subtitle)}</p>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
 
 def label_for(column: str) -> str:
     return COLUMN_LABELS.get(column, column)
@@ -237,50 +512,50 @@ def format_table(df: pd.DataFrame, prepare: bool = True) -> pd.DataFrame:
 def _highlight_risk(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "kritisch":
-        return "background-color: rgba(239, 68, 68, 0.20); font-weight: 600;"
+        return "background-color: #fee2e2; color: #991b1b; font-weight: 700;"
     if text == "bald fällig":
-        return "background-color: rgba(249, 115, 22, 0.18); font-weight: 600;"
+        return "background-color: #ffedd5; color: #9a3412; font-weight: 700;"
     if text == "beobachten":
-        return "background-color: rgba(245, 158, 11, 0.16); font-weight: 600;"
+        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
     if text == "unsicher":
-        return "background-color: rgba(168, 85, 247, 0.16); font-weight: 600;"
+        return "background-color: #f3e8ff; color: #6b21a8; font-weight: 700;"
     if text == "niedrig":
-        return "background-color: rgba(34, 197, 94, 0.16); font-weight: 600;"
+        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
     return ""
 
 
 def _highlight_status(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "ok":
-        return "background-color: rgba(34, 197, 94, 0.14); font-weight: 600;"
+        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
     if "niedrige prognosesicherheit" in text:
-        return "background-color: rgba(245, 158, 11, 0.16); font-weight: 600;"
+        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
     if "keine" in text or "kein" in text:
-        return "background-color: rgba(168, 85, 247, 0.14); font-weight: 600;"
+        return "background-color: #f3e8ff; color: #6b21a8; font-weight: 700;"
     return ""
 
 
 def _highlight_confidence(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "hoch":
-        return "background-color: rgba(34, 197, 94, 0.14); font-weight: 600;"
+        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
     if text == "mittel":
-        return "background-color: rgba(245, 158, 11, 0.16); font-weight: 600;"
+        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
     if text == "niedrig":
-        return "background-color: rgba(239, 68, 68, 0.16); font-weight: 600;"
+        return "background-color: #fee2e2; color: #991b1b; font-weight: 700;"
     if text == "unbekannt":
-        return "background-color: rgba(148, 163, 184, 0.16); font-weight: 600;"
+        return "background-color: #e2e8f0; color: #334155; font-weight: 700;"
     return ""
 
 
 def _highlight_priority(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "hoch":
-        return "background-color: rgba(239, 68, 68, 0.20); font-weight: 600;"
+        return "background-color: #fee2e2; color: #991b1b; font-weight: 700;"
     if text == "mittel":
-        return "background-color: rgba(245, 158, 11, 0.16); font-weight: 600;"
+        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
     if text == "niedrig":
-        return "background-color: rgba(34, 197, 94, 0.14); font-weight: 600;"
+        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
     return ""
 
 

@@ -78,9 +78,12 @@ def logout() -> None:
 
 
 def _show_login_form(customers: list[str], passwords: dict[str, str]) -> None:
-    st.title("LAPP eKanban Plus")
-    st.subheader("Anmeldung")
-    st.markdown("Bitte mit dem eigenen Kundenkonto anmelden.")
+    from src.ui import render_page_header
+
+    render_page_header(
+        "LAPP eKanban Plus",
+        "Bitte mit dem eigenen Kundenkonto anmelden. Das Design ist auf hohe Lesbarkeit und klare Kontraste ausgelegt.",
+    )
 
     configured = _secrets_customer_passwords()
     using_demo_passwords = len(configured) == 0

@@ -12,7 +12,7 @@ from src.analytics import (
 from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer
 from src.db import get_latest_snapshot, register_bundle
 from src.load_data import load_data
-from src.ui import apply_app_styles, render_table
+from src.ui import apply_app_styles, render_page_header, render_table
 
 st.set_page_config(
     page_title="LAPP eKanban Plus",
@@ -26,7 +26,11 @@ customer = require_login(bundle)
 render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
-st.title("LAPP eKanban Plus")
+render_page_header(
+    "LAPP eKanban Plus",
+    "Zentrale Steuerung für Bestandsreichweiten, Bestelltermine, Bündelpotenziale und datenbasierte Rückfragen.",
+    badge=f"Kundenkonto: {customer}",
+)
 
 if scoped_bundle.has_core_data:
     con = register_bundle(scoped_bundle)

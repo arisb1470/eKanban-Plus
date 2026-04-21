@@ -7,7 +7,7 @@ from src.analytics import enrich_latest_snapshot, get_data_freshness
 from src.auth import render_sidebar_auth, require_login, scope_bundle_to_customer
 from src.db import register_bundle
 from src.load_data import load_data, merge_racks
-from src.ui import apply_app_styles, format_value, render_table
+from src.ui import apply_app_styles, format_value, render_page_header, render_table
 
 
 def _best_history_for_drum(bundle, all_racks: pd.DataFrame, drum_id: int) -> tuple[pd.DataFrame, str]:
@@ -42,7 +42,11 @@ customer = require_login(bundle)
 render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
-st.title("Trommel-Explorer")
+render_page_header(
+    "Trommel-Explorer",
+    "Verfolge Verbrauch, Prognose und kaufmännische Kennzahlen pro Trommel im Detail.",
+    badge=f"Kundenkonto: {customer}",
+)
 
 if not scoped_bundle.has_core_data:
     st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")

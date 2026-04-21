@@ -21,7 +21,7 @@ from src.tools import (
     get_drum_status,
     get_general_summary,
 )
-from src.ui import apply_app_styles, render_table
+from src.ui import apply_app_styles, render_page_header, render_table
 
 apply_app_styles()
 
@@ -72,7 +72,11 @@ customer = require_login(bundle)
 render_sidebar_auth()
 scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
-st.title("Chat-Assistent")
+render_page_header(
+    "Chat-Assistent",
+    "Stelle Fragen zu kritischen Trommeln, Bündeln und Einzelstatus. Fakten kommen direkt aus den geladenen Daten.",
+    badge=f"Kundenkonto: {customer}",
+)
 
 if not scoped_bundle.has_core_data:
     st.info("Für dieses Kundenkonto wurden noch keine CSV-Dateien gefunden.")
@@ -83,7 +87,6 @@ snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricin
 all_bundles = build_bundle_candidates(snapshot)
 rules = load_demo_business_rules()
 
-st.caption("Der Chat nutzt Daten-Tools für Fakten und ein Cloud-Modell nur für die Formulierung.")
 if llm_is_available():
     st.success("Chatbot verfügbar")
 else:
@@ -203,7 +206,7 @@ def _resolve_bundle_reference(question: str, bundles_df: pd.DataFrame | None, co
 
 def _extract_rack_phrase(question: str) -> str | None:
     q = question.lower()
-    match = re.search(r"(?:im|in|aus)\s+(?:regal|rack|bereich)\s+([a-z0-9äöüß\-_/ ]+)", q)
+    match = re.search(r"(?:im|in|aus)\s+(?:regal|rack|bereich)\s+([a-z0-9äöüß\\-_/ ]+)", q)
     if match:
         return match.group(1).strip(" .,!?")
     return None
