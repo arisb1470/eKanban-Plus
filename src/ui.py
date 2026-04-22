@@ -15,7 +15,7 @@ COLUMN_LABELS: dict[str, str] = {
     "bundle_surcharge_eur": "Mindermengenzuschlag Bündel",
     "bundle_total_eur": "Kosten gebündelt",
     "bundle_value_eur": "Materialwert Bündel",
-    "current_length_m": "Aktueller Bestand",
+    "current_length_m": "Bestand",
     "cutting_cost_eur": "Schnittkosten",
     "data_age_days": "Datenalter",
     "date": "Messdatum",
@@ -23,8 +23,8 @@ COLUMN_LABELS: dict[str, str] = {
     "drum_count": "Anzahl Trommeln",
     "drum_id": "Trommel",
     "drum_ids": "Trommeln im Bündel",
-    "days_left": "Restreichweite",
-    "estimated_order_value_eur": "Bestellwert gesamt",
+    "days_left": "Reichweite",
+    "estimated_order_value_eur": "Bestellwert",
     "forecast_confidence": "Prognosegüte",
     "forecast_status": "Prognosestatus",
     "has_low_sensor_coverage": "Geringe Sensordichte",
@@ -34,28 +34,28 @@ COLUMN_LABELS: dict[str, str] = {
     "initial_cable_length_m": "Anfangsbestand",
     "is_stale_data": "Historische Daten",
     "latest_due_date": "Späteste Fälligkeit",
-    "latest_safe_order_date": "Spätester Bestelltermin",
+    "latest_safe_order_date": "Bestellen bis",
     "material_order_value_eur": "Materialwert",
     "order_threshold_m": "Meldebestand",
     "packaging_unit_m": "Verpackungseinheit",
     "part_number": "Artikelnummer",
-    "predicted_empty_date": "Voraussichtlich leer am",
+    "predicted_empty_date": "Leer am",
     "predicted_threshold_date": "Meldebestand erreicht am",
     "price_per_meter_eur": "Preis pro Meter",
     "priority": "Priorität",
     "product": "Produkt",
     "product_name": "Produktname",
-    "rack": "Regal / Bereich",
+    "rack": "Bereich",
     "recommended_order_date": "Empfohlener Bestelltermin",
-    "reorder_qty_m": "Bestellmenge",
+    "reorder_qty_m": "Menge",
     "review_reason": "Prüfgrund",
     "risk_label": "Risikostatus",
     "r_squared": "R²",
     "savings_eur": "Einsparung",
-    "sensor_readings_count": "Sensorwerte",
+    "sensor_readings_count": "Messwerte",
     "snapshot_as_of_date": "Datenstand",
-    "avg_battery_voltage": "Batteriespannung",
-    "avg_signal_strength": "Signalstärke",
+    "avg_battery_voltage": "Batterie",
+    "avg_signal_strength": "Signal",
     "telemetry_issue": "Telemetrieproblem",
     "tenant": "Kunde",
     "attention_reason": "Grund für Handlungsbedarf",
@@ -116,6 +116,36 @@ DECIMAL_COLUMNS = {"days_left", "delivery_time_days", "r_squared"}
 INTEGER_COLUMNS = {"drum_count", "sensor_readings_count", "data_age_days", "drum_id"}
 MV_COLUMNS = {"avg_battery_voltage"}
 DBM_COLUMNS = {"avg_signal_strength"}
+
+STATUS_COLUMNS_AFTER_PRODUCT = [
+    "risk_label",
+    "forecast_status",
+    "forecast_confidence",
+    "review_reason",
+    "priority",
+]
+
+DISPLAY_STATUS_COLUMNS = ["Risikostatus", "Prognosestatus"]
+
+LONG_TEXT_COLUMNS = ["Produkt", "Prüfgrund", "Trommeln im Bündel"]
+
+NARROW_TEXT_COLUMNS = [
+    "Trommel",
+    "Bereich",
+    "Risikostatus",
+    "Prognosestatus",
+    "Prognosegüte",
+    "Priorität",
+    "Bestand",
+    "Reichweite",
+    "Bestellen bis",
+    "Leer am",
+    "Messwerte",
+    "Batterie",
+    "Signal",
+    "Menge",
+    "Bestellwert",
+]
 
 
 def apply_app_styles() -> None:
@@ -292,31 +322,43 @@ def apply_app_styles() -> None:
         }
 
         div[data-testid="stDataFrame"] {
-            border: 1px solid var(--app-border);
-            border-radius: 18px;
+            border: 1px solid rgba(215, 226, 240, 0.95);
+            border-radius: 16px;
             overflow: hidden;
             background: rgba(255,255,255,0.98);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.035);
+        }
+
+        div[data-testid="stDataFrame"] table {
+            font-size: 0.92rem !important;
         }
 
         div[data-testid="stDataFrame"] thead tr th {
-            background: linear-gradient(180deg, #f5f9ff 0%, #edf4ff 100%) !important;
+            background: #f8fbff !important;
             color: #1e3a8a !important;
             font-weight: 700 !important;
-            border-bottom: 1px solid rgba(37, 99, 235, 0.14);
+            border-bottom: 1px solid rgba(37, 99, 235, 0.10);
+            padding: 0.55rem 0.65rem !important;
+            white-space: nowrap !important;
         }
 
         div[data-testid="stDataFrame"] tbody tr:nth-child(even) {
-            background: rgba(248, 250, 252, 0.78);
+            background: rgba(248, 250, 252, 0.55);
         }
 
         div[data-testid="stDataFrame"] tbody tr:hover {
-            background: rgba(219, 234, 254, 0.55) !important;
+            background: rgba(241, 245, 249, 0.85) !important;
         }
 
         div[data-testid="stDataFrame"] tbody td {
             color: var(--app-text) !important;
-            border-bottom: 1px solid rgba(226, 232, 240, 0.75);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.65);
+            padding: 0.48rem 0.65rem !important;
+            line-height: 1.25 !important;
+        }
+
+        div[data-testid="stDataFrame"] tbody td p {
+            margin: 0 !important;
         }
 
         [data-baseweb="notification"] {
@@ -450,11 +492,41 @@ def format_value(column: str, value: Any) -> Any:
     return value
 
 
+def _reorder_status_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df.copy()
+
+    columns = list(df.columns)
+    anchor = "product" if "product" in columns else "product_name" if "product_name" in columns else None
+    if anchor is None:
+        return df.copy()
+
+    movable = [column for column in STATUS_COLUMNS_AFTER_PRODUCT if column in columns and column != anchor]
+    if not movable:
+        return df.copy()
+
+    reordered: list[str] = []
+    inserted = False
+    for column in columns:
+        if column in movable:
+            continue
+        reordered.append(column)
+        if column == anchor:
+            reordered.extend(movable)
+            inserted = True
+
+    if not inserted:
+        reordered.extend(movable)
+
+    return df.loc[:, reordered]
+
+
 def format_table(df: pd.DataFrame, prepare: bool = True) -> pd.DataFrame:
     if df.empty:
         return df.copy()
 
     out = display_snapshot(df.copy()) if prepare else df.copy()
+    out = _reorder_status_columns(out)
 
     for column in out.columns:
         out[column] = out[column].apply(lambda value, c=column: format_value(c, value))
@@ -467,13 +539,13 @@ def _palette_for_risk(text: str) -> tuple[str, str] | None:
     text = text.strip().lower()
     if text == "kritisch":
         return "#fee2e2", "#991b1b"
-    if text == "bald fällig":
+    if text in {"hoch", "bald fällig"}:
         return "#ffedd5", "#9a3412"
-    if text == "beobachten":
+    if text in {"mittel", "beobachten"}:
         return "#fef3c7", "#92400e"
     if text == "unsicher":
         return "#f3e8ff", "#6b21a8"
-    if text == "niedrig":
+    if text in {"gut", "niedrig"}:
         return "#dcfce7", "#166534"
     return None
 
@@ -489,19 +561,23 @@ def _highlight_risk(value: Any) -> str:
     return _style_chip(_palette_for_risk(str(value)))
 
 
-def _highlight_status(value: Any) -> str:
-    text = str(value).strip().lower()
+def _palette_for_forecast_status(text: str) -> tuple[str, str] | None:
+    text = text.strip().lower()
     if text == "ok":
-        return _style_chip(("#dcfce7", "#166534"))
+        return "#dcfce7", "#166534"
     if "niedrige prognosesicherheit" in text:
-        return _style_chip(("#fef3c7", "#92400e"))
+        return "#fef3c7", "#92400e"
     if "keine prognosegüte" in text:
-        return _style_chip(("#ede9fe", "#5b21b6"))
+        return "#ede9fe", "#5b21b6"
     if "keine verbrauchsdaten" in text:
-        return _style_chip(("#e2e8f0", "#334155"))
+        return "#e2e8f0", "#334155"
     if "kein aktueller verbrauch" in text:
-        return _style_chip(("#e0f2fe", "#0f4c81"))
-    return ""
+        return "#e0f2fe", "#0f4c81"
+    return None
+
+
+def _highlight_status(value: Any) -> str:
+    return _style_chip(_palette_for_forecast_status(str(value)))
 
 
 def _highlight_confidence(value: Any) -> str:
@@ -528,61 +604,73 @@ def _highlight_priority(value: Any) -> str:
     return ""
 
 
-def _parse_localized_float(value: Any) -> float | None:
-    if value is None:
-        return None
-    text = str(value).strip().lower().replace("tage", "").replace("m", "").replace("€", "").strip()
-    if not text or text in {"—", "kein aktueller verbrauch", "keine daten", "unbekannt"}:
-        return None
-    try:
-        return float(text.replace(".", "").replace(",", "."))
-    except ValueError:
+def _palette_for_review_reason(text: str) -> tuple[str, str] | None:
+    value = text.strip().lower()
+
+    if not value or value == "—":
         return None
 
+    if "batterie schwach" in value:
+        return "#f8fafc", "#334155"
+    if "funksignal schwach" in value:
+        return "#eff6ff", "#1d4ed8"
+    if "wenige sensorwerte" in value:
+        return "#f8fafc", "#475569"
+    if "niedrige prognosesicherheit" in value:
+        return "#f8fafc", "#475569"
+    if "keine prognosegüte" in value:
+        return "#f5f3ff", "#6d28d9"
+    if "keine verbrauchsdaten" in value:
+        return "#f1f5f9", "#334155"
+    if "kein aktueller verbrauch" in value:
+        return "#eef2ff", "#4338ca"
 
-def _highlight_days_left(value: Any) -> str:
-    text = str(value).strip().lower()
-    if "kein aktueller verbrauch" in text:
-        return _style_chip(("#e0f2fe", "#0f4c81"))
-    if "keine daten" in text:
-        return _style_chip(("#e2e8f0", "#334155"))
-    days = _parse_localized_float(value)
-    if days is None:
-        return ""
-    if days <= 3:
-        return _style_chip(("#fee2e2", "#991b1b"))
-    if days <= 7:
-        return _style_chip(("#ffedd5", "#9a3412"))
-    if days <= 14:
-        return _style_chip(("#fef3c7", "#92400e"))
-    return _style_chip(("#dcfce7", "#166534"))
-
-
-def _highlight_cost(value: Any) -> str:
-    amount = _parse_localized_float(value)
-    if amount is None:
-        return ""
-    if amount >= 1000:
-        return "font-weight: 700;"
-    return ""
+    return "#f8fafc", "#475569"
 
 
-def _highlight_related_cells(row: pd.Series) -> list[str]:
-    styles = [""] * len(row)
+def _highlight_review_reason(value: Any) -> str:
+    return _style_chip(_palette_for_review_reason(str(value)))
+
+
+def _row_band_palette(row: pd.Series) -> tuple[str, str] | None:
     risk_palette = _palette_for_risk(str(row.get("Risikostatus", "")))
-    if risk_palette is None:
+    if risk_palette is not None:
+        return risk_palette
+
+    forecast_palette = _palette_for_forecast_status(str(row.get("Prognosestatus", "")))
+    if forecast_palette is not None:
+        return forecast_palette
+
+    return None
+
+
+def _highlight_status_band(row: pd.Series) -> list[str]:
+    styles = [""] * len(row)
+    status_positions = [idx for idx, column in enumerate(row.index) if column in DISPLAY_STATUS_COLUMNS]
+    if not status_positions:
         return styles
 
-    soft_background, soft_text = risk_palette
-    related_style = f"background-color: {soft_background}; color: {soft_text}; font-weight: 600;"
-    for idx, column in enumerate(row.index):
-        if column in {"Restreichweite", "Spätester Bestelltermin", "Voraussichtlich leer am"}:
-            styles[idx] = related_style
+    palette = _row_band_palette(row)
+    if palette is None:
+        return styles
+
+    background, color = palette
+    band_style = f"background-color: {background}; color: {color};"
+    for idx in range(max(status_positions) + 1):
+        styles[idx] = band_style
+
     return styles
 
 
 def _build_styler(df: pd.DataFrame) -> pd.io.formats.style.Styler:
     styler = df.style
+    styler = styler.set_table_styles(
+        [
+            {"selector": "th", "props": [("font-size", "0.92rem"), ("padding", "8px 10px"), ("white-space", "nowrap")]},
+            {"selector": "td", "props": [("font-size", "0.91rem"), ("padding", "7px 10px"), ("line-height", "1.25")]},
+        ],
+        overwrite=False,
+    )
     styler = styler.set_properties(**{"white-space": "normal", "vertical-align": "middle"})
 
     numeric_labels = {
@@ -591,11 +679,25 @@ def _build_styler(df: pd.DataFrame) -> pd.io.formats.style.Styler:
     }
     numeric_columns = [column for column in df.columns if column in numeric_labels]
     if numeric_columns:
-        styler = styler.set_properties(subset=numeric_columns, **{"text-align": "right"})
+        styler = styler.set_properties(subset=numeric_columns, **{"text-align": "right", "white-space": "nowrap"})
 
     centered_columns = [column for column in ["Risikostatus", "Prognosestatus", "Prognosegüte", "Priorität"] if column in df.columns]
     if centered_columns:
-        styler = styler.set_properties(subset=centered_columns, **{"text-align": "center"})
+        styler = styler.set_properties(subset=centered_columns, **{"text-align": "center", "white-space": "nowrap"})
+
+    long_columns = [column for column in LONG_TEXT_COLUMNS if column in df.columns]
+    if long_columns:
+        styler = styler.set_properties(subset=long_columns, **{"min-width": "14rem", "max-width": "24rem"})
+
+    narrow_columns = [column for column in NARROW_TEXT_COLUMNS if column in df.columns]
+    if narrow_columns:
+        styler = styler.set_properties(subset=narrow_columns, **{"white-space": "nowrap"})
+
+    if "Produkt" in df.columns:
+        styler = styler.set_properties(subset=["Produkt"], **{"font-weight": "600"})
+
+    if any(column in df.columns for column in DISPLAY_STATUS_COLUMNS):
+        styler = styler.apply(_highlight_status_band, axis=1)
 
     if "Risikostatus" in df.columns:
         styler = styler.applymap(_highlight_risk, subset=["Risikostatus"])
@@ -605,17 +707,40 @@ def _build_styler(df: pd.DataFrame) -> pd.io.formats.style.Styler:
         styler = styler.applymap(_highlight_confidence, subset=["Prognosegüte"])
     if "Priorität" in df.columns:
         styler = styler.applymap(_highlight_priority, subset=["Priorität"])
-    if "Restreichweite" in df.columns:
-        styler = styler.applymap(_highlight_days_left, subset=["Restreichweite"])
-
-    for cost_column in ["Bestellwert gesamt", "Kosten gebündelt", "Kosten einzeln", "Einsparung"]:
-        if cost_column in df.columns:
-            styler = styler.applymap(_highlight_cost, subset=[cost_column])
-
-    if "Risikostatus" in df.columns:
-        styler = styler.apply(_highlight_related_cells, axis=1)
+    if "Prüfgrund" in df.columns:
+        styler = styler.applymap(_highlight_review_reason, subset=["Prüfgrund"])
 
     return styler
+
+
+def _build_column_config(df: pd.DataFrame) -> dict[str, Any]:
+    width_map = {
+        "Trommel": "small",
+        "Bereich": "small",
+        "Produkt": "large",
+        "Risikostatus": "small",
+        "Prognosestatus": "medium",
+        "Prognosegüte": "small",
+        "Priorität": "small",
+        "Prüfgrund": "large",
+        "Bestand": "small",
+        "Reichweite": "small",
+        "Bestellen bis": "small",
+        "Leer am": "small",
+        "Messwerte": "small",
+        "Batterie": "small",
+        "Signal": "small",
+        "Menge": "small",
+        "Bestellwert": "small",
+        "Trommeln im Bündel": "medium",
+    }
+
+    config: dict[str, Any] = {}
+    for column, width in width_map.items():
+        if column in df.columns:
+            config[column] = st.column_config.TextColumn(column, width=width)
+
+    return config
 
 
 def render_table(df: pd.DataFrame, *, prepare: bool = True, height: int | None = None) -> None:
@@ -625,12 +750,18 @@ def render_table(df: pd.DataFrame, *, prepare: bool = True, height: int | None =
 
     formatted = format_table(df, prepare=prepare)
 
+    resolved_height = height
+    if resolved_height is None:
+        visible_rows = min(len(formatted), 12)
+        header_height = 38
+        row_height = 38
+        resolved_height = min(680, max(110, header_height + visible_rows * row_height + 6))
+
     dataframe_kwargs: dict[str, Any] = {
         "use_container_width": True,
         "hide_index": True,
+        "height": resolved_height,
+        "column_config": _build_column_config(formatted),
     }
-
-    if height is not None:
-        dataframe_kwargs["height"] = height
 
     st.dataframe(_build_styler(formatted), **dataframe_kwargs)

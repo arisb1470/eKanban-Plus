@@ -13,9 +13,10 @@ def _bundle_id(seed: str) -> str:
 
 
 def _priority_label(group: pd.DataFrame) -> str:
-    if group["risk_label"].eq("kritisch").any():
+    labels = group["risk_label"].astype("string").str.lower()
+    if labels.eq("kritisch").any():
         return "hoch"
-    if group["risk_label"].eq("bald fällig").any():
+    if labels.isin(["hoch", "mittel", "bald fällig", "beobachten"]).any():
         return "mittel"
     return "niedrig"
 

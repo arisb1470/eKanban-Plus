@@ -76,10 +76,11 @@ render_table(
             "drum_id",
             "rack",
             "product",
+            "risk_label",
+            "forecast_status",
             "latest_safe_order_date",
             "reorder_qty_m",
             "estimated_order_value_eur",
-            "risk_label",
         ]
     ]
 )

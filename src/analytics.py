@@ -23,7 +23,7 @@ from src.config import (
     WEAK_SIGNAL_STRENGTH_DBM,
 )
 
-RiskLabel = Literal["kritisch", "bald fällig", "beobachten", "niedrig", "unsicher"]
+RiskLabel = Literal["kritisch", "hoch", "mittel", "gut", "unsicher"]
 ForecastStatus = Literal[
     "ok",
     "niedrige Prognosesicherheit",
@@ -102,17 +102,33 @@ def classify_risk(
     forecast_status: ForecastStatus,
     reference_date: pd.Timestamp,
 ) -> RiskLabel:
-    if pd.notna(safe_order_date) and pd.Timestamp(safe_order_date).normalize() <= reference_date:
-        return "kritisch"
+    severity_rank = {"gut": 0, "mittel": 1, "hoch": 2, "kritisch": 3}
+    risk: RiskLabel = "gut"
+
+    if pd.notna(safe_order_date):
+        days_until_safe_order = int((pd.Timestamp(safe_order_date).normalize() - reference_date).days)
+        if days_until_safe_order <= 0:
+            risk = "kritisch"
+        elif days_until_safe_order <= 7:
+            risk = "hoch"
+        elif days_until_safe_order <= 30:
+            risk = "mittel"
 
     if days_left is not None and pd.notna(days_left):
         days_left = float(days_left)
+        candidate: RiskLabel = "gut"
         if days_left <= 3:
-            return "kritisch"
-        if days_left <= 7:
-            return "bald fällig"
-        if days_left <= 14:
-            return "beobachten"
+            candidate = "kritisch"
+        elif days_left <= 7:
+            candidate = "hoch"
+        elif days_left <= 14:
+            candidate = "mittel"
+
+        if severity_rank[candidate] > severity_rank[risk]:
+            risk = candidate
+
+    if risk != "gut":
+        return risk
 
     if forecast_status in {
         "niedrige Prognosesicherheit",
@@ -122,7 +138,7 @@ def classify_risk(
     }:
         return "unsicher"
 
-    return "niedrig"
+    return "gut"
 
 
 def _display_days_left(days_left: float | int | None, forecast_status: str) -> float | str:
@@ -298,7 +314,7 @@ def enrich_latest_snapshot(latest_snapshot: pd.DataFrame, pricing: pd.DataFrame)
         )
     ]
 
-    df["needs_attention"] = df["risk_label"].isin(["kritisch", "bald fällig", "beobachten"])
+    df["needs_attention"] = df["risk_label"].isin(["kritisch", "hoch", "mittel"])
     df["needs_review"] = df["forecast_status"].isin(
         ["niedrige Prognosesicherheit", "keine Prognosegüte", "keine Verbrauchsdaten", "kein aktueller Verbrauch"]
     ) | df["telemetry_issue"]
@@ -314,7 +330,7 @@ def filter_critical_drums(df: pd.DataFrame, horizon_days: int = 7) -> pd.DataFra
     out = df.copy()
     horizon_date = get_snapshot_as_of(out) + pd.Timedelta(days=horizon_days)
 
-    cond = out["risk_label"].isin(["kritisch", "bald fällig", "beobachten"])
+    cond = out["risk_label"].isin(["kritisch", "hoch", "mittel"])
     cond |= out["days_left"].fillna(9999) <= horizon_days
     cond |= out["latest_safe_order_date"].notna() & (
         pd.to_datetime(out["latest_safe_order_date"]).dt.normalize() <= horizon_date

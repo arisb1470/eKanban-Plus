@@ -247,9 +247,9 @@ def _filter_last_result(question: str, context: dict[str, Any]) -> dict[str, Any
             ]
         explanation.append("nur Trommeln mit niedriger Prognosegüte oder unsicherem Status")
 
-    if any(term in q for term in ["kritisch", "bald fällig", "beobachten", "unsicher", "niedrig"]):
+    if any(term in q for term in ["kritisch", "hoch", "mittel", "unsicher", "gut", "bald fällig", "beobachten", "niedrig"]):
         if "risk_label" in filtered.columns:
-            for risk in ["kritisch", "bald fällig", "beobachten", "unsicher", "niedrig"]:
+            for risk in ["kritisch", "hoch", "mittel", "unsicher", "gut", "bald fällig", "beobachten", "niedrig"]:
                 if risk in q:
                     filtered = filtered[filtered["risk_label"].astype("string").str.lower() == risk]
                     explanation.append(f"nur Risikostatus '{risk}'")

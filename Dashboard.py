@@ -47,13 +47,13 @@ if scoped_bundle.has_core_data:
     col4.metric("Prüfbedarf", kpis["review"])
     col5.metric("Ø Restreichweite", f"{kpis['avg_days_left']} Tage")
 
-    st.subheader("Was diese App macht")
+    st.subheader("What's New")
     st.markdown(
         """
-        - berechnet Restreichweiten und sichere Bestellzeitpunkte
-        - identifiziert kritische Trommeln, Telemetrieprobleme und Forecast-Risiken
-        - schlägt Bestell-Bündel vor, um Kosten zu senken
-        - beantwortet Rückfragen im Chat auf Basis von Daten-Tools
+        - Berechnung von Restreichweiten und sicheren Bestellzeitpunkten
+        - Identifizierung kritischer Trommeln, Telemetrieprobleme und Forecast-Risiken
+        - Vorschläge von Bestell-Bündeln, um Kosten zu senken
+        - Beantwortung von Rückfragen im Chat auf Basis von Daten-Tools
         """
     )
 
@@ -64,12 +64,11 @@ if scoped_bundle.has_core_data:
                 "drum_id",
                 "rack",
                 "product",
+                "risk_label",
                 "current_length_m",
                 "days_left",
                 "latest_safe_order_date",
                 "predicted_empty_date",
-                "review_reason",
-                "risk_label",
             ]
         ]
     )
@@ -82,7 +81,6 @@ if scoped_bundle.has_core_data:
                 "rack",
                 "product",
                 "review_reason",
-                "forecast_status",
                 "sensor_readings_count",
                 "avg_battery_voltage",
                 "avg_signal_strength",
@@ -98,7 +96,7 @@ else:
         data/raw/
         ├─ rack_kunde_a_regal_og.csv
         ├─ rack_kunde_b_kommissionierung.csv
-        ├─ pricing_and_leadtimes.csv
+        └─ pricing_and_leadtimes.csv
         └─ einzeltrommeln/
            └─ *.csv
         ```

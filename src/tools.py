@@ -100,7 +100,7 @@ def find_critical_drums(snapshot: pd.DataFrame, horizon_days: int = 30) -> dict[
             "horizon_days": horizon_days,
             "count": 0,
             "definition": (
-                "Handlungsbedarf bedeutet: Risikostatus kritisch/bald fällig/beobachten "
+                "Handlungsbedarf bedeutet: Risikostatus kritisch/hoch/mittel "
                 "oder Restreichweite innerhalb des Horizonts oder spätester sicherer Bestelltermin innerhalb des Horizonts."
             ),
             "data_preview": [],
@@ -110,7 +110,7 @@ def find_critical_drums(snapshot: pd.DataFrame, horizon_days: int = 30) -> dict[
     horizon_date = as_of_date + pd.Timedelta(days=horizon_days)
 
     risk_label_series = critical.get("risk_label", pd.Series(index=critical.index, dtype="object"))
-    risk_reason = risk_label_series.astype("string").str.lower().isin(["kritisch", "bald fällig", "beobachten"])
+    risk_reason = risk_label_series.astype("string").str.lower().isin(["kritisch", "hoch", "mittel", "bald fällig", "beobachten"])
 
     days_left_series = pd.to_numeric(critical.get("days_left"), errors="coerce")
     days_left_reason = days_left_series <= horizon_days
@@ -147,7 +147,7 @@ def find_critical_drums(snapshot: pd.DataFrame, horizon_days: int = 30) -> dict[
     summary = (
         f"{len(critical)} Trommeln haben Handlungsbedarf im Horizont von {horizon_days} Tagen. "
         f"Definition: Handlungsbedarf bedeutet mindestens eines der folgenden Kriterien: "
-        f"Risikostatus kritisch/bald fällig/beobachten, Restreichweite ≤ {horizon_days} Tage "
+        f"Risikostatus kritisch/hoch/mittel, Restreichweite ≤ {horizon_days} Tage "
         f"oder spätester sicherer Bestelltermin bis {horizon_date.strftime('%d.%m.%Y')}. "
         f"Gründe im aktuellen Ergebnis (Mehrfachnennungen möglich): "
         f"{risk_count} wegen Risikostatus, "
