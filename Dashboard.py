@@ -40,10 +40,6 @@ if scoped_bundle.has_core_data:
     kpis = build_kpis(snapshot, attention_horizon_days=30)
     freshness = get_data_freshness(snapshot)
 
-    st.caption(
-        f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage"
-    )
-
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Trommeln", kpis["drums"])
     col2.metric("Kritisch", kpis["critical"])
@@ -61,22 +57,22 @@ if scoped_bundle.has_core_data:
         """
     )
 
-    preview_cols = [
-        "drum_id",
-        "rack",
-        "product",
-        "current_length_m",
-        "days_left",
-        "predicted_empty_date",
-        "latest_safe_order_date",
-        "forecast_status",
-        "review_reason",
-        "estimated_order_value_eur",
-        "risk_label",
-    ]
-
     st.subheader("Trommeln mit Handlungsbedarf im 30-Tage-Horizont")
-    render_table(critical[preview_cols])
+    render_table(
+        critical[
+            [
+                "drum_id",
+                "rack",
+                "product",
+                "current_length_m",
+                "days_left",
+                "latest_safe_order_date",
+                "predicted_empty_date",
+                "review_reason",
+                "risk_label",
+            ]
+        ]
+    )
 
     st.subheader("Trommeln mit Prüfbedarf")
     render_table(
@@ -85,8 +81,8 @@ if scoped_bundle.has_core_data:
                 "drum_id",
                 "rack",
                 "product",
-                "forecast_status",
                 "review_reason",
+                "forecast_status",
                 "sensor_readings_count",
                 "avg_battery_voltage",
                 "avg_signal_strength",

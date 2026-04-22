@@ -38,8 +38,6 @@ critical = filter_critical_drums(snapshot, horizon_days=30)
 review = filter_review_drums(snapshot)
 freshness = get_data_freshness(snapshot)
 
-st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
-
 metric_cols = st.columns(6)
 metric_cols[0].metric("Trommeln", kpis["drums"])
 metric_cols[1].metric("Kritisch", kpis["critical"])
@@ -48,7 +46,7 @@ metric_cols[3].metric("Prüfbedarf", kpis["review"])
 metric_cols[4].metric("Ø Restreichweite", f"{kpis['avg_days_left']} Tage")
 metric_cols[5].metric("Hohe Prognosegüte", f"{kpis['high_confidence_share']} %")
 
-left, right = st.columns([1.3, 1])
+left, right = st.columns([1.35, 0.95])
 with left:
     st.subheader("Trommeln mit Handlungsbedarf")
     render_table(
@@ -59,10 +57,8 @@ with left:
                 "product",
                 "current_length_m",
                 "days_left",
-                "predicted_empty_date",
                 "latest_safe_order_date",
-                "forecast_status",
-                "forecast_confidence",
+                "predicted_empty_date",
                 "review_reason",
                 "risk_label",
             ]
@@ -81,12 +77,11 @@ render_table(
             "drum_id",
             "rack",
             "product",
-            "forecast_status",
             "review_reason",
+            "forecast_status",
             "sensor_readings_count",
             "avg_battery_voltage",
             "avg_signal_strength",
-            "risk_label",
         ]
     ]
 )

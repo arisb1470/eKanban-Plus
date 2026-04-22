@@ -44,7 +44,7 @@ scoped_bundle = scope_bundle_to_customer(bundle, customer)
 
 render_page_header(
     "Trommel-Explorer",
-    "Verfolge Verbrauch, Prognose und kaufmännische Kennzahlen pro Trommel im Detail.",
+    "Verfolge Verbrauch, Prognose und Kennzahlen pro Trommel im Detail.",
     badge=f"Kundenkonto: {customer}",
 )
 
@@ -59,8 +59,6 @@ snapshot = enrich_latest_snapshot(
     scoped_bundle.pricing,
 )
 freshness = get_data_freshness(snapshot)
-
-st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
 
 available_drums = sorted(snapshot["drum_id"].dropna().astype(int).unique().tolist())
 selected_drum = st.selectbox("Trommel wählen", available_drums)

@@ -30,8 +30,6 @@ con = register_bundle(scoped_bundle)
 snapshot = enrich_latest_snapshot(get_latest_snapshot(con), scoped_bundle.pricing)
 freshness = get_data_freshness(snapshot)
 
-st.caption(f"Datenstand: {freshness['as_of_date'].date()} · Alter der Daten: {freshness['age_days']} Tage")
-
 control_left, control_right = st.columns(2)
 with control_left:
     horizon = st.slider("Planungshorizont (Tage)", min_value=3, max_value=30, value=14)
@@ -44,7 +42,21 @@ if bundles.empty:
     st.stop()
 
 st.subheader("Empfohlene Bündel")
-render_table(bundles)
+render_table(
+    bundles[
+        [
+            "bundle_id",
+            "rack",
+            "recommended_order_date",
+            "latest_due_date",
+            "drum_count",
+            "bundle_total_eur",
+            "individual_total_eur",
+            "savings_eur",
+            "priority",
+        ]
+    ]
+)
 
 selected_bundle = st.selectbox("Bündel auswählen", options=bundles["bundle_id"].tolist())
 details = bundle_details(snapshot, selected_bundle, bundles)
@@ -66,8 +78,6 @@ render_table(
             "product",
             "latest_safe_order_date",
             "reorder_qty_m",
-            "material_order_value_eur",
-            "cutting_cost_eur",
             "estimated_order_value_eur",
             "risk_label",
         ]

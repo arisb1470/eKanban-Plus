@@ -51,6 +51,7 @@ COLUMN_LABELS: dict[str, str] = {
     "review_reason": "Prüfgrund",
     "risk_label": "Risikostatus",
     "r_squared": "R²",
+    "savings_eur": "Einsparung",
     "sensor_readings_count": "Sensorwerte",
     "snapshot_as_of_date": "Datenstand",
     "avg_battery_voltage": "Batteriespannung",
@@ -132,14 +133,6 @@ def apply_app_styles() -> None:
             --app-primary: #2563eb;
             --app-primary-dark: #1d4ed8;
             --app-primary-soft: #dbeafe;
-            --app-success-bg: #dcfce7;
-            --app-success-text: #166534;
-            --app-warning-bg: #fef3c7;
-            --app-warning-text: #92400e;
-            --app-danger-bg: #fee2e2;
-            --app-danger-text: #991b1b;
-            --app-info-bg: #e0f2fe;
-            --app-info-text: #0f4c81;
             --shadow-soft: 0 14px 40px rgba(15, 23, 42, 0.08);
         }
 
@@ -182,7 +175,7 @@ def apply_app_styles() -> None:
         }
 
         .app-hero {
-            background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(239,246,255,0.98) 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(239,246,255,0.98) 100%);
             border: 1px solid rgba(37, 99, 235, 0.16);
             border-radius: 26px;
             padding: 1.4rem 1.6rem;
@@ -245,11 +238,6 @@ def apply_app_styles() -> None:
             font-weight: 750;
         }
 
-        div[data-testid="stMetricDelta"] {
-            color: var(--app-primary-dark) !important;
-            font-weight: 650;
-        }
-
         .stButton > button,
         div[data-testid="stFormSubmitButton"] > button {
             border: none;
@@ -266,14 +254,6 @@ def apply_app_styles() -> None:
             color: #ffffff;
         }
 
-        .stButton > button:focus,
-        div[data-testid="stFormSubmitButton"] > button:focus,
-        .stButton > button:focus-visible,
-        div[data-testid="stFormSubmitButton"] > button:focus-visible {
-            outline: 3px solid rgba(37, 99, 235, 0.22);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
-        }
-
         div[data-baseweb="select"] > div,
         .stTextInput > div > div > input,
         .stNumberInput input,
@@ -285,7 +265,7 @@ def apply_app_styles() -> None:
             border-color: var(--app-border) !important;
         }
 
-        div[data-baseweb="select"] * ,
+        div[data-baseweb="select"] *,
         .stTextInput input,
         textarea,
         .stNumberInput input,
@@ -315,57 +295,34 @@ def apply_app_styles() -> None:
             border: 1px solid var(--app-border);
             border-radius: 18px;
             overflow: hidden;
-            background: rgba(255,255,255,0.95);
+            background: rgba(255,255,255,0.98);
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
         }
 
         div[data-testid="stDataFrame"] thead tr th {
-            background: #eff6ff !important;
+            background: linear-gradient(180deg, #f5f9ff 0%, #edf4ff 100%) !important;
             color: #1e3a8a !important;
             font-weight: 700 !important;
             border-bottom: 1px solid rgba(37, 99, 235, 0.14);
         }
 
         div[data-testid="stDataFrame"] tbody tr:nth-child(even) {
-            background: rgba(248, 250, 252, 0.85);
+            background: rgba(248, 250, 252, 0.78);
         }
 
         div[data-testid="stDataFrame"] tbody tr:hover {
-            background: rgba(219, 234, 254, 0.65) !important;
+            background: rgba(219, 234, 254, 0.55) !important;
         }
 
         div[data-testid="stDataFrame"] tbody td {
             color: var(--app-text) !important;
-        }
-
-        [data-testid="stAlertContainer"] [data-testid="stMarkdownContainer"] p {
-            margin-bottom: 0;
-        }
-
-        [data-testid="stAlertContainer"] {
-            border-radius: 18px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.75);
         }
 
         [data-baseweb="notification"] {
             border-radius: 18px !important;
             border: 1px solid var(--app-border) !important;
             background: rgba(255, 255, 255, 0.94) !important;
-        }
-
-        .stSuccess [data-baseweb="notification"] {
-            background: linear-gradient(180deg, #f3fff7 0%, #ebfff2 100%) !important;
-        }
-
-        .stInfo [data-baseweb="notification"] {
-            background: linear-gradient(180deg, #f2fbff 0%, #eaf7ff 100%) !important;
-        }
-
-        .stWarning [data-baseweb="notification"] {
-            background: linear-gradient(180deg, #fffaf0 0%, #fff5dd 100%) !important;
-        }
-
-        .stError [data-baseweb="notification"] {
-            background: linear-gradient(180deg, #fff5f5 0%, #ffeded 100%) !important;
         }
 
         details {
@@ -385,10 +342,6 @@ def apply_app_styles() -> None:
             border: 1px solid rgba(215, 226, 240, 0.9);
             border-radius: 18px;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-        }
-
-        hr {
-            border-color: rgba(148, 163, 184, 0.22);
         }
 
         a {
@@ -415,6 +368,7 @@ def render_page_header(title: str, subtitle: str, badge: str | None = None) -> N
         """,
         unsafe_allow_html=True,
     )
+
 
 def label_for(column: str) -> str:
     return COLUMN_LABELS.get(column, column)
@@ -509,59 +463,139 @@ def format_table(df: pd.DataFrame, prepare: bool = True) -> pd.DataFrame:
     return out
 
 
-def _highlight_risk(value: Any) -> str:
-    text = str(value).strip().lower()
+def _palette_for_risk(text: str) -> tuple[str, str] | None:
+    text = text.strip().lower()
     if text == "kritisch":
-        return "background-color: #fee2e2; color: #991b1b; font-weight: 700;"
+        return "#fee2e2", "#991b1b"
     if text == "bald fällig":
-        return "background-color: #ffedd5; color: #9a3412; font-weight: 700;"
+        return "#ffedd5", "#9a3412"
     if text == "beobachten":
-        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
+        return "#fef3c7", "#92400e"
     if text == "unsicher":
-        return "background-color: #f3e8ff; color: #6b21a8; font-weight: 700;"
+        return "#f3e8ff", "#6b21a8"
     if text == "niedrig":
-        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
-    return ""
+        return "#dcfce7", "#166534"
+    return None
+
+
+def _style_chip(palette: tuple[str, str] | None) -> str:
+    if palette is None:
+        return ""
+    background, color = palette
+    return f"background-color: {background}; color: {color}; font-weight: 700;"
+
+
+def _highlight_risk(value: Any) -> str:
+    return _style_chip(_palette_for_risk(str(value)))
 
 
 def _highlight_status(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "ok":
-        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
+        return _style_chip(("#dcfce7", "#166534"))
     if "niedrige prognosesicherheit" in text:
-        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
-    if "keine" in text or "kein" in text:
-        return "background-color: #f3e8ff; color: #6b21a8; font-weight: 700;"
+        return _style_chip(("#fef3c7", "#92400e"))
+    if "keine prognosegüte" in text:
+        return _style_chip(("#ede9fe", "#5b21b6"))
+    if "keine verbrauchsdaten" in text:
+        return _style_chip(("#e2e8f0", "#334155"))
+    if "kein aktueller verbrauch" in text:
+        return _style_chip(("#e0f2fe", "#0f4c81"))
     return ""
 
 
 def _highlight_confidence(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "hoch":
-        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
+        return _style_chip(("#dcfce7", "#166534"))
     if text == "mittel":
-        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
+        return _style_chip(("#fef3c7", "#92400e"))
     if text == "niedrig":
-        return "background-color: #fee2e2; color: #991b1b; font-weight: 700;"
+        return _style_chip(("#fee2e2", "#991b1b"))
     if text == "unbekannt":
-        return "background-color: #e2e8f0; color: #334155; font-weight: 700;"
+        return _style_chip(("#e2e8f0", "#334155"))
     return ""
 
 
 def _highlight_priority(value: Any) -> str:
     text = str(value).strip().lower()
     if text == "hoch":
-        return "background-color: #fee2e2; color: #991b1b; font-weight: 700;"
+        return _style_chip(("#fee2e2", "#991b1b"))
     if text == "mittel":
-        return "background-color: #fef3c7; color: #92400e; font-weight: 700;"
+        return _style_chip(("#fef3c7", "#92400e"))
     if text == "niedrig":
-        return "background-color: #dcfce7; color: #166534; font-weight: 700;"
+        return _style_chip(("#dcfce7", "#166534"))
     return ""
+
+
+def _parse_localized_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    text = str(value).strip().lower().replace("tage", "").replace("m", "").replace("€", "").strip()
+    if not text or text in {"—", "kein aktueller verbrauch", "keine daten", "unbekannt"}:
+        return None
+    try:
+        return float(text.replace(".", "").replace(",", "."))
+    except ValueError:
+        return None
+
+
+def _highlight_days_left(value: Any) -> str:
+    text = str(value).strip().lower()
+    if "kein aktueller verbrauch" in text:
+        return _style_chip(("#e0f2fe", "#0f4c81"))
+    if "keine daten" in text:
+        return _style_chip(("#e2e8f0", "#334155"))
+    days = _parse_localized_float(value)
+    if days is None:
+        return ""
+    if days <= 3:
+        return _style_chip(("#fee2e2", "#991b1b"))
+    if days <= 7:
+        return _style_chip(("#ffedd5", "#9a3412"))
+    if days <= 14:
+        return _style_chip(("#fef3c7", "#92400e"))
+    return _style_chip(("#dcfce7", "#166534"))
+
+
+def _highlight_cost(value: Any) -> str:
+    amount = _parse_localized_float(value)
+    if amount is None:
+        return ""
+    if amount >= 1000:
+        return "font-weight: 700;"
+    return ""
+
+
+def _highlight_related_cells(row: pd.Series) -> list[str]:
+    styles = [""] * len(row)
+    risk_palette = _palette_for_risk(str(row.get("Risikostatus", "")))
+    if risk_palette is None:
+        return styles
+
+    soft_background, soft_text = risk_palette
+    related_style = f"background-color: {soft_background}; color: {soft_text}; font-weight: 600;"
+    for idx, column in enumerate(row.index):
+        if column in {"Restreichweite", "Spätester Bestelltermin", "Voraussichtlich leer am"}:
+            styles[idx] = related_style
+    return styles
 
 
 def _build_styler(df: pd.DataFrame) -> pd.io.formats.style.Styler:
     styler = df.style
-    styler = styler.set_properties(**{"white-space": "normal"})
+    styler = styler.set_properties(**{"white-space": "normal", "vertical-align": "middle"})
+
+    numeric_labels = {
+        label_for(column)
+        for column in (CURRENCY_COLUMNS | METER_COLUMNS | DECIMAL_COLUMNS | INTEGER_COLUMNS | MV_COLUMNS | DBM_COLUMNS)
+    }
+    numeric_columns = [column for column in df.columns if column in numeric_labels]
+    if numeric_columns:
+        styler = styler.set_properties(subset=numeric_columns, **{"text-align": "right"})
+
+    centered_columns = [column for column in ["Risikostatus", "Prognosestatus", "Prognosegüte", "Priorität"] if column in df.columns]
+    if centered_columns:
+        styler = styler.set_properties(subset=centered_columns, **{"text-align": "center"})
 
     if "Risikostatus" in df.columns:
         styler = styler.applymap(_highlight_risk, subset=["Risikostatus"])
@@ -571,19 +605,28 @@ def _build_styler(df: pd.DataFrame) -> pd.io.formats.style.Styler:
         styler = styler.applymap(_highlight_confidence, subset=["Prognosegüte"])
     if "Priorität" in df.columns:
         styler = styler.applymap(_highlight_priority, subset=["Priorität"])
+    if "Restreichweite" in df.columns:
+        styler = styler.applymap(_highlight_days_left, subset=["Restreichweite"])
+
+    for cost_column in ["Bestellwert gesamt", "Kosten gebündelt", "Kosten einzeln", "Einsparung"]:
+        if cost_column in df.columns:
+            styler = styler.applymap(_highlight_cost, subset=[cost_column])
+
+    if "Risikostatus" in df.columns:
+        styler = styler.apply(_highlight_related_cells, axis=1)
 
     return styler
 
 
-def render_table(df: pd.DataFrame, *, prepare: bool = True, height: int | str | None = None) -> None:
+def render_table(df: pd.DataFrame, *, prepare: bool = True, height: int | None = None) -> None:
     if df.empty:
         st.info("Keine Daten vorhanden.")
         return
 
     formatted = format_table(df, prepare=prepare)
 
-    dataframe_kwargs = {
-        "width": "stretch",
+    dataframe_kwargs: dict[str, Any] = {
+        "use_container_width": True,
         "hide_index": True,
     }
 
