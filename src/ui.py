@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+import base64
 import html
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import streamlit as st
@@ -148,11 +150,42 @@ NARROW_TEXT_COLUMNS = [
 ]
 
 
+def _sidebar_logo_data_uri() -> str:
+    logo_path = Path(__file__).resolve().parents[1] / "assets" / "Lapp_Logo_rgb.svg"
+    if not logo_path.exists():
+        return ""
+
+    encoded = base64.b64encode(logo_path.read_bytes()).decode("utf-8")
+    return f"data:image/svg+xml;base64,{encoded}"
+
+
 def apply_app_styles() -> None:
-    st.markdown(
+    sidebar_logo_uri = _sidebar_logo_data_uri()
+
+    sidebar_logo_css = ""
+    if sidebar_logo_uri:
+        sidebar_logo_css = f"""
+        [data-testid="stSidebarNav"] {{
+            position: relative;
+            padding-top: 5.25rem;
+        }}
+
+        [data-testid="stSidebarNav"]::before {{
+            content: "";
+            position: absolute;
+            top: 0.85rem;
+            left: 1rem;
+            width: 8.75rem;
+            height: 2.4rem;
+            background: url("{sidebar_logo_uri}") no-repeat left center;
+            background-size: contain;
+        }}
         """
+
+    st.markdown(
+        f"""
         <style>
-        :root {
+        :root {{
             --app-bg: #f4f7fb;
             --app-surface: #ffffff;
             --app-surface-soft: #f8fbff;
@@ -160,235 +193,303 @@ def apply_app_styles() -> None:
             --app-border: #d7e2f0;
             --app-text: #0f172a;
             --app-muted: #475569;
-            --app-primary: #2563eb;
-            --app-primary-dark: #1d4ed8;
-            --app-primary-soft: #dbeafe;
+            --app-primary: #ff7100;
+            --app-primary-dark: #e66500;
+            --app-primary-soft: rgba(255, 113, 0, 0.14);
+            --app-primary-soft-strong: rgba(255, 113, 0, 0.22);
+            --app-primary-contrast: #ffffff;
             --shadow-soft: 0 14px 40px rgba(15, 23, 42, 0.08);
-        }
+        }}
 
-        html, body, [class*="css"] {
+        html, body, [class*="css"] {{
             color: var(--app-text);
-        }
+        }}
 
         .stApp,
         [data-testid="stAppViewContainer"],
-        [data-testid="stMain"] {
+        [data-testid="stMain"] {{
             background:
-                radial-gradient(circle at top right, rgba(37, 99, 235, 0.10), transparent 24%),
-                radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 26%),
+                radial-gradient(circle at top right, rgba(255, 113, 0, 0.10), transparent 24%),
+                radial-gradient(circle at top left, rgba(255, 113, 0, 0.06), transparent 26%),
                 linear-gradient(180deg, #f9fbff 0%, var(--app-bg) 100%);
             color: var(--app-text);
-        }
+        }}
 
-        .block-container {
+        .block-container {{
             max-width: 1440px;
             padding-top: 2rem;
             padding-bottom: 2.5rem;
-        }
+        }}
 
-        [data-testid="stSidebar"] {
+        [data-testid="stSidebar"] {{
             background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
             border-right: 1px solid var(--app-border);
-        }
+        }}
 
-        [data-testid="stSidebar"] * {
+        [data-testid="stSidebar"] * {{
             color: var(--app-text);
-        }
+        }}
 
-        h1, h2, h3, h4, h5, h6 {
+        {sidebar_logo_css}
+
+        h1, h2, h3, h4, h5, h6 {{
             color: var(--app-text);
             letter-spacing: -0.02em;
-        }
+        }}
 
-        p, li, label, .stCaption, .stMarkdown, .stText, small {
+        p, li, label, .stCaption, .stMarkdown, .stText, small {{
             color: var(--app-muted);
-        }
+        }}
 
-        .app-hero {
-            background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(239,246,255,0.98) 100%);
-            border: 1px solid rgba(37, 99, 235, 0.16);
+        .app-hero {{
+            background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(255,247,240,0.98) 100%);
+            border: 1px solid rgba(255, 113, 0, 0.16);
             border-radius: 26px;
             padding: 1.4rem 1.6rem;
             margin: 0 0 1.15rem 0;
             box-shadow: var(--shadow-soft);
-        }
+        }}
 
-        .app-hero__top {
+        .app-hero__top {{
             display: flex;
             justify-content: space-between;
             gap: 0.75rem;
             align-items: center;
             margin-bottom: 0.65rem;
             flex-wrap: wrap;
-        }
+        }}
 
-        .app-hero h1 {
+        .app-hero h1 {{
             margin: 0;
             color: var(--app-text);
             font-size: clamp(1.7rem, 2.3vw, 2.45rem);
             line-height: 1.1;
-        }
+        }}
 
-        .app-hero p {
+        .app-hero p {{
             margin: 0.55rem 0 0 0;
             color: var(--app-muted);
             font-size: 1rem;
             line-height: 1.55;
             max-width: 62rem;
-        }
+        }}
 
-        .app-badge {
+        .app-badge {{
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            padding: 0.36rem 0.72rem;
+            padding: 0.42rem 0.82rem;
             border-radius: 999px;
-            background: var(--app-primary-soft);
-            color: #1e3a8a;
+            background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-primary-dark) 100%);
+            color: var(--app-primary-contrast);
             font-size: 0.84rem;
             font-weight: 700;
-            border: 1px solid rgba(37, 99, 235, 0.14);
-        }
+            border: 1px solid rgba(255, 113, 0, 0.24);
+            box-shadow: 0 10px 24px rgba(255, 113, 0, 0.22);
+        }}
 
-        div[data-testid="stMetric"] {
+        div[data-testid="stMetric"] {{
             background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
             border: 1px solid var(--app-border);
             border-radius: 22px;
             padding: 0.9rem 1rem;
             box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
-        }
+        }}
 
-        div[data-testid="stMetricLabel"] {
+        div[data-testid="stMetricLabel"] {{
             color: var(--app-muted) !important;
             font-weight: 600;
-        }
+        }}
 
-        div[data-testid="stMetricValue"] {
+        div[data-testid="stMetricValue"] {{
             color: var(--app-text) !important;
             font-weight: 750;
-        }
+        }}
 
         .stButton > button,
-        div[data-testid="stFormSubmitButton"] > button {
+        div[data-testid="stFormSubmitButton"] > button {{
             border: none;
             border-radius: 14px;
             background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-primary-dark) 100%);
-            color: #ffffff;
+            color: var(--app-primary-contrast) !important;
             font-weight: 700;
-            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
-        }
+            box-shadow: 0 10px 24px rgba(255, 113, 0, 0.22);
+        }}
 
         .stButton > button:hover,
-        div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-            color: #ffffff;
-        }
+        div[data-testid="stFormSubmitButton"] > button:hover {{
+            background: linear-gradient(135deg, #e66500 0%, #cc5b00 100%);
+            color: var(--app-primary-contrast) !important;
+        }}
+
+        .stButton > button p,
+        .stButton > button span,
+        div[data-testid="stFormSubmitButton"] > button p,
+        div[data-testid="stFormSubmitButton"] > button span {{
+            color: var(--app-primary-contrast) !important;
+        }}
 
         div[data-baseweb="select"] > div,
         .stTextInput > div > div > input,
         .stNumberInput input,
         .stDateInput input,
         textarea,
-        .stSlider [data-baseweb="slider"] {
+        .stSlider [data-baseweb="slider"] {{
             background: rgba(255, 255, 255, 0.96) !important;
             color: var(--app-text) !important;
             border-color: var(--app-border) !important;
-        }
+        }}
 
         div[data-baseweb="select"] *,
         .stTextInput input,
         textarea,
         .stNumberInput input,
-        .stDateInput input {
+        .stDateInput input {{
             color: var(--app-text) !important;
-        }
+        }}
 
-        .stTabs [role="tablist"] {
+        .stSlider [data-baseweb="slider"] {{
+            padding-top: 0.35rem;
+            padding-bottom: 0.35rem;
+        }}
+
+        .stSlider [data-baseweb="slider"] [role="slider"] {{
+            background: var(--app-primary) !important;
+            border-color: var(--app-primary) !important;
+            color: var(--app-primary-contrast) !important;
+            box-shadow: 0 0 0 2px rgba(255, 113, 0, 0.22) !important;
+        }}
+
+        .stSlider [data-baseweb="slider"] [role="slider"] * {{
+            color: var(--app-primary-contrast) !important;
+        }}
+
+        .stSlider [data-baseweb="slider"] > div > div > div {{
+            background: var(--app-primary) !important;
+        }}
+
+        .stSlider [data-baseweb="slider"] [data-testid="stThumbValue"],
+        .stSlider [data-baseweb="slider"] [data-testid="stSliderThumbValue"],
+        .stSlider [data-baseweb="slider"] [data-testid="stSliderTickBarMin"],
+        .stSlider [data-baseweb="slider"] [data-testid="stSliderTickBarMax"] {{
+            color: var(--app-primary-contrast) !important;
+        }}
+
+        .sidebar-account-card {{
+            margin: 0.25rem 0 0.9rem 0;
+            padding: 0.95rem 1rem;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--app-primary) 0%, var(--app-primary-dark) 100%);
+            color: var(--app-primary-contrast) !important;
+            box-shadow: 0 10px 24px rgba(255, 113, 0, 0.20);
+            border: 1px solid rgba(255, 113, 0, 0.22);
+        }}
+
+        .sidebar-account-card * {{
+            color: var(--app-primary-contrast) !important;
+        }}
+
+        .sidebar-account-card__label {{
+            font-size: 0.78rem;
+            font-weight: 700;
+            opacity: 0.92;
+            margin-bottom: 0.18rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }}
+
+        .sidebar-account-card__value {{
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }}
+
+        .stTabs [role="tablist"] {{
             gap: 0.4rem;
-        }
+        }}
 
-        .stTabs [role="tab"] {
+        .stTabs [role="tab"] {{
             border-radius: 999px;
             padding: 0.45rem 0.9rem;
             border: 1px solid var(--app-border);
             background: rgba(255,255,255,0.8);
             color: var(--app-muted);
-        }
+        }}
 
-        .stTabs [aria-selected="true"] {
+        .stTabs [aria-selected="true"] {{
             background: var(--app-primary-soft) !important;
-            color: #1e3a8a !important;
-            border-color: rgba(37, 99, 235, 0.24) !important;
-        }
+            color: #9a3e00 !important;
+            border-color: rgba(255, 113, 0, 0.24) !important;
+        }}
 
-        div[data-testid="stDataFrame"] {
+        div[data-testid="stDataFrame"] {{
             border: 1px solid rgba(215, 226, 240, 0.95);
             border-radius: 16px;
             overflow: hidden;
             background: rgba(255,255,255,0.98);
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.035);
-        }
+        }}
 
-        div[data-testid="stDataFrame"] table {
+        div[data-testid="stDataFrame"] table {{
             font-size: 0.92rem !important;
-        }
+        }}
 
-        div[data-testid="stDataFrame"] thead tr th {
-            background: #f8fbff !important;
-            color: #1e3a8a !important;
+        div[data-testid="stDataFrame"] thead tr th {{
+            background: #fff7f0 !important;
+            color: #9a3e00 !important;
             font-weight: 700 !important;
-            border-bottom: 1px solid rgba(37, 99, 235, 0.10);
+            border-bottom: 1px solid rgba(255, 113, 0, 0.10);
             padding: 0.55rem 0.65rem !important;
             white-space: nowrap !important;
-        }
+        }}
 
-        div[data-testid="stDataFrame"] tbody tr:nth-child(even) {
+        div[data-testid="stDataFrame"] tbody tr:nth-child(even) {{
             background: rgba(248, 250, 252, 0.55);
-        }
+        }}
 
-        div[data-testid="stDataFrame"] tbody tr:hover {
+        div[data-testid="stDataFrame"] tbody tr:hover {{
             background: rgba(241, 245, 249, 0.85) !important;
-        }
+        }}
 
-        div[data-testid="stDataFrame"] tbody td {
+        div[data-testid="stDataFrame"] tbody td {{
             color: var(--app-text) !important;
             border-bottom: 1px solid rgba(226, 232, 240, 0.65);
             padding: 0.48rem 0.65rem !important;
             line-height: 1.25 !important;
-        }
+        }}
 
-        div[data-testid="stDataFrame"] tbody td p {
+        div[data-testid="stDataFrame"] tbody td p {{
             margin: 0 !important;
-        }
+        }}
 
-        [data-baseweb="notification"] {
+        [data-baseweb="notification"] {{
             border-radius: 18px !important;
             border: 1px solid var(--app-border) !important;
             background: rgba(255, 255, 255, 0.94) !important;
-        }
+        }}
 
-        details {
+        details {{
             background: rgba(255,255,255,0.9);
             border: 1px solid var(--app-border);
             border-radius: 18px;
             padding: 0.3rem 0.8rem;
-        }
+        }}
 
-        details summary {
+        details summary {{
             color: var(--app-text);
             font-weight: 700;
-        }
+        }}
 
-        [data-testid="stChatMessage"] {
+        [data-testid="stChatMessage"] {{
             background: rgba(255,255,255,0.78);
             border: 1px solid rgba(215, 226, 240, 0.9);
             border-radius: 18px;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
-        }
+        }}
 
-        a {
-            color: var(--app-primary-dark);
-        }
+        a {{
+            color: #c85700;
+        }}
         </style>
         """,
         unsafe_allow_html=True,

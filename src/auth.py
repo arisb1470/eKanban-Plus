@@ -82,7 +82,7 @@ def _show_login_form(customers: list[str], passwords: dict[str, str]) -> None:
 
     render_page_header(
         "LAPP eKanban Plus",
-        "Bitte mit dem eigenen Kundenkonto anmelden. Das Design ist auf hohe Lesbarkeit und klare Kontraste ausgelegt.",
+        "Bitte mit dem eigenen Kundenkonto anmelden.",
     )
 
     configured = _secrets_customer_passwords()
@@ -129,7 +129,15 @@ def render_sidebar_auth() -> str:
         return ""
 
     with st.sidebar:
-        st.success(f"Angemeldet als {customer}")
+        st.markdown(
+            f"""
+            <div class="sidebar-account-card">
+                <div class="sidebar-account-card__label">Kundenkonto</div>
+                <div class="sidebar-account-card__value">{customer}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         if st.button("Abmelden", use_container_width=True):
             logout()
             st.rerun()
